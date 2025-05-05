@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  password          String
+  name              String
+  phone             String?
+  emailVerified     Boolean   @default(false)
+  role          UserRole    @default(USER)
+  verificationToken String?   @unique
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  bookings      Booking[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+model City {
+  id              String  @id @default(uuid()) @db.VarChar(36)
+  name            String  @db.VarChar(255)
+  nameAr          String  @map("name_ar") @db.VarChar(255)
+  departureRoutes Route[] @relation("departure")
+  arrivalRoutes   Route[] @relation("arrival")
+
+  @@map("cities")
+}
+
+model Route {
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  departureCityId String   @map("departure_city_id") @db.VarChar(36)
+  arrivalCityId   String   @map("arrival_city_id") @db.VarChar(36)
+  distance        Decimal? @db.Decimal(10, 2)
+  departureCity   City     @relation("departure", fields: [departureCityId], references: [id], onUpdate: Restrict, map: "routes_ibfk_1")
+  arrivalCity     City     @relation("arrival", fields: [arrivalCityId], references: [id], onUpdate: Restrict, map: "routes_ibfk_2")
+  trips           Trip[]
+
+  @@index([arrivalCityId], map: "arrival_city_id")
+  @@index([departureCityId], map: "departure_city_id")
+  @@map("routes")
+}
+
+model Bus {
+  id          String     @id @default(uuid()) @db.VarChar(36)
+  plateNumber String     @unique(map: "plate_number") @map("plate_number") @db.VarChar(20)
+  capacity    Int
+  model       String?    @db.VarChar(100)
+  status      BusStatus? @default(active)
+  trips       Trip[]
+
+  @@map("buses")
+}
+
+model Trip {
+  id            String      @id @default(uuid()) @db.VarChar(36)
+  routeId       String      @map("route_id") @db.VarChar(36)
+  busId         String      @map("bus_id") @db.VarChar(36)
+  departureTime DateTime    @map("departure_time") @db.DateTime(0)
+  arrivalTime   DateTime    @map("arrival_time") @db.DateTime(0)
+  price         Decimal     @db.Decimal(10, 2)
+  status        TripStatus? @default(scheduled)
+  bookings      Booking[]
+  seats         Seat[]
+  route         Route       @relation(fields: [routeId], references: [id], onUpdate: Restrict, map: "trips_ibfk_1")
+  bus           Bus         @relation(fields: [busId], references: [id], onUpdate: Restrict, map: "trips_ibfk_2")
+
+  @@index([busId], map: "bus_id")
+  @@index([routeId], map: "route_id")
+  @@map("trips")
+}
+
+model Seat {
+  id             String          @id @default(uuid()) @db.VarChar(36)
+  tripId         String          @map("trip_id") @db.VarChar(36)
+  seatNumber     String          @map("seat_number") @db.VarChar(10)
+  status         SeatStatus?     @default(available)
+  bookingDetails BookingDetail[]
+  trip           Trip            @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "seats_ibfk_1")
+
+  @@index([tripId], map: "trip_id")
+  @@map("seats")
+}
+
+model Booking {
+  id          String          @id @default(uuid()) @db.VarChar(36)
+  userId      String          @map("user_id") @db.VarChar(36)
+  tripId      String          @map("trip_id") @db.VarChar(36)
+  bookingDate DateTime        @default(now()) @map("booking_date") @db.Timestamp(0)
+  status      BookingStatus?  @default(pending)
+  totalPrice  Decimal         @map("total_price") @db.Decimal(10, 2)
+  details     BookingDetail[]
+  user        User            @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "bookings_ibfk_1")
+  trip        Trip            @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "bookings_ibfk_2")
+
+  @@index([tripId], map: "trip_id")
+  @@index([userId], map: "user_id")
+  @@map("bookings")
+}
+
+model BookingDetail {
+  id        String  @id @default(uuid()) @db.VarChar(36)
+  bookingId String  @map("booking_id") @db.VarChar(36)
+  seatId    String  @map("seat_id") @db.VarChar(36)
+  price     Decimal @db.Decimal(10, 2)
+  booking   Booking @relation(fields: [bookingId], references: [id], onUpdate: Restrict, map: "booking_details_ibfk_1")
+  seat      Seat    @relation(fields: [seatId], references: [id], onUpdate: Restrict, map: "booking_details_ibfk_2")
+
+  @@index([bookingId], map: "booking_id")
+  @@index([seatId], map: "seat_id")
+  @@map("booking_details")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  token     String   @db.VarChar(255)
+  expiresAt DateTime @default(now()) @map("expires_at") @db.Timestamp(0)
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
+  user      User     @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "refresh_tokens_ibfk_1")
+
+  @@index([userId], map: "user_id")
+  @@map("refresh_tokens")
+}
+
+
+enum BusStatus {
+  active
+  maintenance
+  inactive
+  passenger_filling
+  in_trip
+}
+
+enum TripStatus {
+  scheduled
+  in_progress @map("in-progress")
+  completed
+  cancelled
+}
+
+enum SeatStatus {
+  available
+  booked
+  reserved
+  blocked
+
+}
+
+enum BookingStatus {
+  pending
+  confirmed
+  cancelled
+  completed
+}
