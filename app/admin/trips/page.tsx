@@ -174,7 +174,8 @@ export default function TripsPage() {
                 {t.columns.description}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.imageurl}
+                
+              {t.columns.imageurl}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.actions}
@@ -217,8 +218,8 @@ export default function TripsPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.description}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                    {trip.imageUrls}
+                <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px] flex overflow-x-scroll">
+                  {trip.imageUrls}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   {t.status[trip.status]!= 'Completed' &&(
@@ -243,6 +244,7 @@ export default function TripsPage() {
           </tbody>
         </table>
       </div>
+        
     </div>
   )
 }
