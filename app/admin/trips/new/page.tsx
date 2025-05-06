@@ -242,7 +242,7 @@ export default function NewTripPage() {
         </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t.labels.imageurl}
+            {t.labels.images}
           </label>
           <input
             accept="image/*"

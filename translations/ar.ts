@@ -458,6 +458,7 @@ export const ar = {
             edit: 'تعديل الرحلة'
           },
           labels: {
+            images: "الصور المحملة",
             title: 'العنوان',
             description	: 'شرح',
             route: 'المسار',

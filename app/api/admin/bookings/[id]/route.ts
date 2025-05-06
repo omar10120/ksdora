@@ -25,7 +25,7 @@ export async function PUT(
         include: {
           details: {
             include: {
-              seat: true
+            seat: true
             }
           }
         }

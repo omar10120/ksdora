@@ -436,13 +436,14 @@ export const en = {
               edit: 'Edit Trip'
             },
             labels: {
+              imageUrl:'image',
               title: 'title',
               description	: 'description',
               route: 'Route',
               bus: 'Bus',
               departureTime: 'Departure Time',
               arrivalTime: 'Arrival Time',
-              imageurl: 'upload image',
+              images: "Uploaded Images",
               price: 'Price',
               status: 'Status'
             },
