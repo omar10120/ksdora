@@ -33,7 +33,11 @@ export default function NewTripPage() {
     busId: '',
     departureTime: '',
     arrivalTime: '',
-    price: ''
+    price: '',
+    title : '',
+    imageUrl: '',
+    description	:'',
+
   })
 
   useEffect(() => {
@@ -120,7 +124,31 @@ export default function NewTripPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow text-black">
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.title}
+            </label>
+            <input
+              type="text"
+              required
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.description}
+            </label>
+            <textarea
+              // type="text"
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t.labels.route}
@@ -199,7 +227,19 @@ export default function NewTripPage() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
-
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.imageurl}
+          </label>
+          <input
+            title='chouse a video'
+            accept='image/*'
+            type="file"
+            value={formData.imageUrl}
+            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
         <div className="flex justify-end space-x-4">
           <button
             type="button"

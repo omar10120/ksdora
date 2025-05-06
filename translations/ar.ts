@@ -430,6 +430,9 @@ export const ar = {
         addButton: 'إضافة رحلة',
         processing: 'جاري المعالجة...',
         columns: {
+          title: 'العنوان',
+          description: 'الشرح',
+          imageurl: 'مسار الصورة',
           route: 'المسار',
           bus: 'الحافلة',
           schedule: 'الجدول',
@@ -455,10 +458,13 @@ export const ar = {
             edit: 'تعديل الرحلة'
           },
           labels: {
+            title: 'العنوان',
+            description	: 'شرح',
             route: 'المسار',
             bus: 'الحافلة',
             departureTime: 'وقت المغادرة',
             arrivalTime: 'وقت الوصول',
+            imageurl: 'تحميل صورة',
             price: 'السعر',
             status: 'الحالة'
           },

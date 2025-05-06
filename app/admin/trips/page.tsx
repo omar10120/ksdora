@@ -11,6 +11,9 @@ import {
 import { useLanguage } from '@/context/LanguageContext'
 
 interface Trip {
+  title:string,
+  description:string,
+  imageUrl:string,
   id: string
   routeId: string
   busId: string
@@ -149,6 +152,9 @@ export default function TripsPage() {
         <table className="min-w-full divide-y divide-gray-200" dir="ltr">
           <thead className="bg-gray-50">
             <tr>
+               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.title}
+              </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.route}
               </th>
@@ -164,6 +170,12 @@ export default function TripsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.status}
               </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.description}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.imageurl}
+              </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.actions}
               </th>
@@ -172,6 +184,11 @@ export default function TripsPage() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredTrips.map((trip) => (
               <tr key={trip.id} className="hover:bg-gray-50">
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {trip.title}
+                  </div>
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
                     {trip.route.departureCity.name} → {trip.route.arrivalCity.name}
@@ -196,6 +213,12 @@ export default function TripsPage() {
                   <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(trip.status)}`}>
                     {t.status[trip.status]}
                   </span>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                    {trip.description}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                    {trip.imageUrl}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   {t.status[trip.status]!= 'Completed' &&(

@@ -408,6 +408,9 @@ export const en = {
           addButton: 'Add Trip',
           processing: 'Processing...',
           columns: {
+            title: 'title',
+            description: 'description',
+            imageurl: 'imageUrl',
             route: 'Route',
             bus: 'Bus',
             schedule: 'Schedule',
@@ -433,10 +436,13 @@ export const en = {
               edit: 'Edit Trip'
             },
             labels: {
+              title: 'title',
+              description	: 'description',
               route: 'Route',
               bus: 'Bus',
               departureTime: 'Departure Time',
               arrivalTime: 'Arrival Time',
+              imageurl: 'upload image',
               price: 'Price',
               status: 'Status'
             },

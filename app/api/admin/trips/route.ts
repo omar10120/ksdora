@@ -30,10 +30,10 @@ export async function GET() {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { routeId, busId, departureTime, arrivalTime, price } = body
+    const { routeId, busId, departureTime, arrivalTime, price, imageUrl,description,title } = body
 
     // Validate required fields
-    if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
+    if (!routeId || !busId || !departureTime || !arrivalTime || !price ) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -94,6 +94,9 @@ export async function POST(req: Request) {
       // Create the trip
       const newTrip = await tx.trip.create({
         data: {
+          title,
+          description,
+          imageUrl,
           routeId,
           busId,
           departureTime: new Date(departureTime),
