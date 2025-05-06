@@ -17,13 +17,15 @@
   },
   "scripts": {  
     "dev": "next dev",
-    "build": "prisma generate && next build ",
+    "build": "next build ",
 
     "start": "next start",
     "seed": "npx ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts",
     "prisma:seed": "prisma db seed",
     "migrate:dev": "prisma migrate dev && prisma db seed",
-    "migrate:reset": "prisma migrate reset"
+    "migrate:reset": "prisma migrate reset",
+    "postinstall": "prisma generate"
+
   },
   "prisma": {
     "seed": "ts-node --compiler-options {\"module\":\"CommonJS\"} prisma/seed.ts"
