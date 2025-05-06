@@ -27,7 +27,9 @@ export default function NewTripPage() {
   const [loadingProgress, setloadingProgress] = useState(false)
   const [loadingProgressCansel, setloadingProgressCansel] = useState(false)
   const [error, setError] = useState('')
-  const [imageFile, setImageFile] = useState<File | null>(null)
+  
+  const [imageFiles, setImageFiles] = useState<File[]>([])
+
 
   const [formData, setFormData] = useState({
     routeId: '',
@@ -79,9 +81,8 @@ export default function NewTripPage() {
     }
   }
 
-  const uploadImage =async ()=>{
 
-  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
@@ -95,10 +96,10 @@ export default function NewTripPage() {
         form.append(key, value)
       })
   
-      if (imageFile) {
-        form.append('image', imageFile)
-      }
-  
+      imageFiles.forEach((file) => {
+        form.append('images', file)
+      })
+      
       const response = await fetch('/api/admin/trips', {
         method: 'POST',
         headers: {
@@ -141,6 +142,7 @@ export default function NewTripPage() {
               {t.labels.title}
             </label>
             <input
+              
               type="text"
               required
               value={formData.title}
@@ -244,11 +246,13 @@ export default function NewTripPage() {
           </label>
           <input
             accept="image/*"
+            multiple
             type="file"
             onChange={(e) => {
-              const file = e.target.files?.[0]
-              if (file) {
-                setImageFile(file)
+              const files = Array.from(e.target.files || [])
+              if (files) {
+                setImageFiles(files)
+
               }
             }}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"

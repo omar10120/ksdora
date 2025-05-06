@@ -13,7 +13,7 @@ import { useLanguage } from '@/context/LanguageContext'
 interface Trip {
   title:string,
   description:string,
-  imageUrl:string,
+  imageUrls:string,
   id: string
   routeId: string
   busId: string
@@ -203,7 +203,7 @@ export default function TripsPage() {
                     {new Date(trip.departureTime).toLocaleString(language === 'ar' ? 'en-US' : 'en-US')}
                   </div>
                   <div className="text-sm text-gray-500">
-                    to {new Date(trip.arrivalTime).toLocaleString(language === 'ar' ? 'en-US' : 'en-US')}
+                  → {new Date(trip.arrivalTime).toLocaleString(language === 'ar' ? 'en-US' : 'en-US')}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -218,7 +218,7 @@ export default function TripsPage() {
                     {trip.description}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                    {trip.imageUrl}
+                    {trip.imageUrls}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   {t.status[trip.status]!= 'Completed' &&(
