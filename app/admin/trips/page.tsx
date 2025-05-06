@@ -150,7 +150,7 @@ export default function TripsPage() {
 
       <div className="bg-white shadow-md rounded-lg overflow-scroll">
         <table className="min-w-full divide-y divide-gray-200" dir="ltr">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 ">
             <tr>
                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.title}
@@ -214,10 +214,10 @@ export default function TripsPage() {
                     {t.status[trip.status]}
                   </span>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.description}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.imageUrl}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">

@@ -10,7 +10,7 @@ import UserOnlyGuard from '@/components/UserOnlyGuard'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'Pack Your Bags - Bus Booking',
+  title: 'Tour Time - Bus Booking',
   description: 'Book your bus tickets easily and quickly',
 }
 

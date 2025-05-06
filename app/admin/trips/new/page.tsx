@@ -27,6 +27,7 @@ export default function NewTripPage() {
   const [loadingProgress, setloadingProgress] = useState(false)
   const [loadingProgressCansel, setloadingProgressCansel] = useState(false)
   const [error, setError] = useState('')
+  const [imageFile, setImageFile] = useState<File | null>(null)
 
   const [formData, setFormData] = useState({
     routeId: '',
@@ -78,31 +79,40 @@ export default function NewTripPage() {
     }
   }
 
+  const uploadImage =async ()=>{
+
+  }
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setLoading(true)
-
+  
     try {
       const token = localStorage.getItem('token')
+      const form = new FormData()
+  
+      Object.entries(formData).forEach(([key, value]) => {
+        form.append(key, value)
+      })
+  
+      if (imageFile) {
+        form.append('image', imageFile)
+      }
+  
       const response = await fetch('/api/admin/trips', {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({
-          ...formData,
-          price: parseFloat(formData.price)
-        })
+        body: form
       })
-
+  
       const data = await response.json()
-
+  
       if (!response.ok) {
         throw new Error(data.error || t.errors.createFailed)
       }
-
+  
       toast.success(t.success.created)
       router.push('/admin/trips')
     } catch (err: any) {
@@ -112,6 +122,7 @@ export default function NewTripPage() {
       setLoading(false)
     }
   }
+  
 
   return (
     <div className={`max-w-2xl mx-auto text-black ${language === 'ar' ? 'rtl' : 'ltr'}`}>
@@ -232,13 +243,17 @@ export default function NewTripPage() {
             {t.labels.imageurl}
           </label>
           <input
-            title='chouse a video'
-            accept='image/*'
+            accept="image/*"
             type="file"
-            value={formData.imageUrl}
-            onChange={(e) => setFormData({ ...formData, imageUrl: e.target.value })}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                setImageFile(file)
+              }
+            }}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
+
         </div>
         <div className="flex justify-end space-x-4">
           <button

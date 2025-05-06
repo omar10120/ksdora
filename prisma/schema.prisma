@@ -74,7 +74,7 @@ model Trip {
   status        TripStatus? @default(scheduled)
   title         String?    
   description   String?     
-  imageUrl      String?    
+  imageUrls     String? 
   bookings      Booking[]
   seats         Seat[]
   route         Route       @relation(fields: [routeId], references: [id], onUpdate: Restrict, map: "trips_ibfk_1")

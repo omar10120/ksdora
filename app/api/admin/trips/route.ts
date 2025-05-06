@@ -1,5 +1,10 @@
-import { NextResponse } from 'next/server'
-import prisma from '@/lib/prisma'
+import { NextRequest, NextResponse } from 'next/server';
+import prisma from '@/lib/prisma';
+import path from 'path';
+import fs from 'fs/promises';
+
+
+
 
 export async function GET() {
   try {
@@ -27,35 +32,34 @@ export async function GET() {
   }
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
-    const body = await req.json()
-    const { routeId, busId, departureTime, arrivalTime, price, imageUrl,description,title } = body
+    const formData = await req.formData();
+
+    const routeId = formData.get('routeId') as string;
+    const busId = formData.get('busId') as string;
+    const departureTime = formData.get('departureTime') as string;
+    const arrivalTime = formData.get('arrivalTime') as string;
+    const price = parseFloat(formData.get('price') as string);
+    const title = formData.get('title') as string;
+    const description = formData.get('description') as string;
+    const files = formData.getAll('images') as File[];
 
     // Validate required fields
-    if (!routeId || !busId || !departureTime || !arrivalTime || !price ) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     // Check if bus is active
     const bus = await prisma.bus.findFirst({
-      where: {
-        id: busId,
-        status: 'active'
-      }
-    })
+      where: { id: busId, status: 'active' },
+    });
 
     if (!bus) {
-      return NextResponse.json(
-        { error: 'Bus is not available or not in active state' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Bus is not available or not active' }, { status: 400 });
     }
 
-    // Check if bus is available for the time period
+    // Check bus availability for time range
     const existingTrip = await prisma.trip.findFirst({
       where: {
         busId,
@@ -63,74 +67,73 @@ export async function POST(req: Request) {
           {
             AND: [
               { departureTime: { lte: new Date(departureTime) } },
-              { arrivalTime: { gte: new Date(departureTime) } }
-            ]
+              { arrivalTime: { gte: new Date(departureTime) } },
+            ],
           },
           {
             AND: [
               { departureTime: { lte: new Date(arrivalTime) } },
-              { arrivalTime: { gte: new Date(arrivalTime) } }
-            ]
-          }
-        ]
-      }
-    })
+              { arrivalTime: { gte: new Date(arrivalTime) } },
+            ],
+          },
+        ],
+      },
+    });
 
     if (existingTrip) {
-      return NextResponse.json(
-        { error: 'Bus is not available for the selected time period' },
-        { status: 400 }
-      )
+      return NextResponse.json({ error: 'Bus is not available for this period' }, { status: 400 });
     }
 
-    // Create trip with seats in a transaction and update bus state
+    // Create upload directory
+    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    await fs.mkdir(uploadDir, { recursive: true });
+
+    // Handle image uploads
+    const imageUrls: string[] = [];
+    for (const file of files) {
+      const buffer = Buffer.from(await file.arrayBuffer());
+      const fileName = `${Date.now()}-${file.name}`;
+      const filePath = path.join(uploadDir, fileName);
+      await fs.writeFile(filePath, buffer);
+      imageUrls.push(`/uploads/${fileName}`);
+    }
+
+    // Create trip in transaction
     const trip = await prisma.$transaction(async (tx) => {
-      // Update bus status to passenger_filling
       await tx.bus.update({
         where: { id: busId },
-        data: { status:  'passenger_filling'}  
-      })
+        data: { status: 'passenger_filling' },
+      });
 
-      // Create the trip
-      const newTrip = await tx.trip.create({
+      return tx.trip.create({
         data: {
-          title,
-          description,
-          imageUrl,
           routeId,
           busId,
+          title,
+          description,
           departureTime: new Date(departureTime),
           arrivalTime: new Date(arrivalTime),
           price,
           status: 'scheduled',
+          imageUrls: JSON.stringify(imageUrls),
           seats: {
             create: Array.from({ length: bus.capacity }, (_, i) => ({
               seatNumber: `${String.fromCharCode(65 + Math.floor(i / 4))}${(i % 4) + 1}`,
-              status: 'available'
-            }))
-          }
+              status: 'available',
+            })),
+          },
         },
         include: {
-          route: {
-            include: {
-              departureCity: true,
-              arrivalCity: true
-            }
-          },
+          route: { include: { departureCity: true, arrivalCity: true } },
           bus: true,
-          seats: true
-        }
-      })
+          seats: true,
+        },
+      });
+    });
 
-      return newTrip
-    })
-
-    return NextResponse.json(trip)
+    return NextResponse.json(trip);
   } catch (error) {
-    console.error('Create trip error:', error)
-    return NextResponse.json(
-      { error: 'Failed to create trip' },
-      { status: 500 }
-    )
+    console.error('Create trip error:', error);
+    return NextResponse.json({ error: 'Failed to create trip' }, { status: 500 });
   }
 }
