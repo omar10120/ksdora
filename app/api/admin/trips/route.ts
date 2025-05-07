@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
 
     // Handle image uploads
     const imageUrls: string[] = [];
-    for (const file of files) {
+    for (const file of files) { 
       const buffer = Buffer.from(await file.arrayBuffer());
       const fileName = `${Date.now()}-${file.name}`;
       const filePath = path.join(uploadDir, fileName);
