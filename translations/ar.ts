@@ -458,6 +458,7 @@ export const ar = {
             edit: 'تعديل الرحلة'
           },
           labels: {
+            // imageurl: 'تحميل صورة',
             images: "الصور المحملة",
             title: 'العنوان',
             description	: 'شرح',
@@ -465,7 +466,6 @@ export const ar = {
             bus: 'الحافلة',
             departureTime: 'وقت المغادرة',
             arrivalTime: 'وقت الوصول',
-            imageurl: 'تحميل صورة',
             price: 'السعر',
             status: 'الحالة'
           },

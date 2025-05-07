@@ -4,11 +4,12 @@ import type { TripStatus } from '@prisma/client'
 import fs from 'fs/promises'
 import path from 'path'
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+// export const config = {
+//   api: {
+//     bodyParser: false,
+//   },
+// };
+export const runtime = 'nodejs'; // Required for fs/promises and handling files
 
 export async function GET(
   req: Request,
@@ -47,6 +48,7 @@ export async function GET(
 
 
 export async function PUT(req: NextRequest) {
+  
   try {
     const formData = await req.formData();
 
