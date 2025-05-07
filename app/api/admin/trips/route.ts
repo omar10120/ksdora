@@ -87,7 +87,7 @@ export async function POST(req: NextRequest) {
     // Create upload directory
     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
     await fs.mkdir(uploadDir, { recursive: true });
-
+    
     // Handle image uploads
     const imageUrls: string[] = [];
     for (const file of files) { 

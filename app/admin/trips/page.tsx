@@ -244,7 +244,7 @@ export default function TripsPage() {
           </tbody>
         </table>
       </div>
-        
+        <img src="/uploads/1746615092061-image0_0.png" alt="" />
     </div>
   )
 }
