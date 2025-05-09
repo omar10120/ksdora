@@ -49,6 +49,8 @@ export default function EditTripPage({ params }: PageProps) {
     status: 'scheduled',
     title: '',
     description	:'',
+    location:'',
+    lastBookingTime:'',
   })
 
   useEffect(() => {
@@ -73,10 +75,14 @@ export default function EditTripPage({ params }: PageProps) {
         busId: data.busId,
         departureTime: new Date(data.departureTime).toISOString().slice(0, 16),
         arrivalTime: new Date(data.arrivalTime).toISOString().slice(0, 16),
+        lastBookingTime: new Date(data.lastBookingTime).toISOString().slice(0, 16),
         price: data.price.toString(),
         status: data.status,
         title: data.title,
-        description: data.description
+        description: data.description,
+        location: data.location
+        
+        
       })
       setExistingImages(Array.isArray(data.imageUrls) ? data.imageUrls : JSON.parse(data.imageUrls || '[]'))
 
@@ -133,10 +139,13 @@ export default function EditTripPage({ params }: PageProps) {
       form.append('busId', formData.busId);
       form.append('departureTime', formData.departureTime);
       form.append('arrivalTime', formData.arrivalTime);
+      form.append('lastBookingTime', formData.lastBookingTime);
       form.append('price', formData.price);
       form.append('status', formData.status);
       form.append('title', formData.title);
       form.append('description', formData.description);
+      
+      form.append('location', formData.location);
       form.append('existingImages', JSON.stringify(existingImages));
   
       newImages.forEach((file) => {
@@ -253,6 +262,18 @@ export default function EditTripPage({ params }: PageProps) {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.lastbookingTime}
+          </label>
+          <input
+            type="datetime-local"
+            required
+            value={formData.lastBookingTime}
+            onChange={(e) => setFormData({ ...formData, lastBookingTime: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
 
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -299,7 +320,18 @@ export default function EditTripPage({ params }: PageProps) {
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
-
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.location}
+            </label>
+            <input
+              type="text"
+              
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
           <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 {t.labels.images}

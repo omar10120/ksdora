@@ -44,8 +44,15 @@ export async function PUT(
 ) {
   try {
     const body = await req.json()
-    const { routeId, busId, departureTime, arrivalTime, price, status } = body
+    const { routeId, busId, departureTime, arrivalTime, price, status,location,lastBookingTime } = body
 
+    if( lastBookingTime > departureTime || lastBookingTime > arrivalTime){
+      return NextResponse.json(
+        { error: 'Last booking time must be before departure time and arrival time' },
+        { status: 400 }
+      )
+    }
+    
     const updatedTrip = await prisma.trip.update({
       where: { id: params.id },
       data: {
@@ -54,7 +61,9 @@ export async function PUT(
         departureTime: new Date(departureTime),
         arrivalTime: new Date(arrivalTime),
         price,
-        status
+        status,
+        lastBookingTime,
+        location
       },
       include: {
         route: {

@@ -13,12 +13,14 @@ import { useLanguage } from '@/context/LanguageContext'
 interface Trip {
   title:string,
   description:string,
+  location:string,
   imageUrls:string,
   id: string
   routeId: string
   busId: string
   departureTime: string
   arrivalTime: string
+  lastBookingTime: string
   price: number
   status: 'scheduled' | 'in_progress' | 'completed' | 'cancelled'
   route: {
@@ -41,7 +43,9 @@ export default function TripsPage() {
   const router = useRouter()
 
   useEffect(() => {
+    
     fetchTrips()
+    
   }, [])
 
   const fetchTrips = async () => {
@@ -54,6 +58,7 @@ export default function TripsPage() {
       })
       const data = await response.json()
       setTrips(data)
+      console.log(data)
     } catch (error) {
       console.error('Error fetching trips:', error)
     } finally {
@@ -75,6 +80,7 @@ export default function TripsPage() {
 
       if (response.ok) {
         setTrips(trips.filter(trip => trip.id !== tripId))
+        
         alert(t.delete.success)
       } else {
         const error = await response.json()
@@ -165,6 +171,9 @@ export default function TripsPage() {
                 {t.columns.schedule}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.lastbookingTimes}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.price}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -174,8 +183,11 @@ export default function TripsPage() {
                 {t.columns.description}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.location}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 
-              {t.columns.imageurl}
+                {t.columns.imageurl}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.actions}
@@ -208,6 +220,9 @@ export default function TripsPage() {
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {new Date(trip.lastBookingTime).toLocaleString(language === 'ar' ? 'en-US' : 'en-US')}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   ${trip.price}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -215,9 +230,12 @@ export default function TripsPage() {
                     {t.status[trip.status]}
                   </span>
                 </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {trip.location}
+                </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.description}
-                </td>
+                </td> 
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px] flex overflow-x-scroll">
                   {trip.imageUrls}
                 </td>

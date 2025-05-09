@@ -70,10 +70,12 @@ model Trip {
   busId         String      @map("bus_id") @db.VarChar(36)
   departureTime DateTime    @map("departure_time") @db.DateTime(0)
   arrivalTime   DateTime    @map("arrival_time") @db.DateTime(0)
+  lastBookingTime   DateTime    @map("last_Booking_Time") @db.DateTime(0)
   price         Decimal     @db.Decimal(10, 2)
   status        TripStatus? @default(scheduled)
   title         String?    
-  description   String?     
+  description   String?   
+  location   String?    
   imageUrls     String? 
   bookings      Booking[]
   seats         Seat[]

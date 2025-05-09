@@ -104,10 +104,10 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { routeId, busId, departureTime, arrivalTime, price } = body
+    const { routeId, busId, departureTime, arrivalTime, price, location,lastBookingTime } = body
 
     // Validate required fields
-    if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
+    if (!routeId || !busId || !departureTime || !arrivalTime || !price || !lastBookingTime) {
       return NextResponse.json(
         { error: 'Missing required fields' },
         { status: 400 }
@@ -134,7 +134,12 @@ export async function POST(req: Request) {
         ]
       }
     })
-
+    if( lastBookingTime > departureTime || lastBookingTime > arrivalTime){
+      return NextResponse.json(
+        { error: 'Last booking time must be before departure time and arrival time' },
+        { status: 400 }
+      )
+    }
     if (existingTrip) {
       return NextResponse.json(
         { error: 'Bus is not available for the selected time period' },
@@ -151,8 +156,10 @@ export async function POST(req: Request) {
           busId,
           departureTime: new Date(departureTime),
           arrivalTime: new Date(arrivalTime),
+          lastBookingTime: new Date(lastBookingTime),
           price,
-          status: 'scheduled'
+          status: 'scheduled',
+          location,
         },
         include: {
           route: {
@@ -194,4 +201,4 @@ export async function POST(req: Request) {
       { status: 500 }
     )
   }
-}
+} 

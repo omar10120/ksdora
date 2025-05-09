@@ -40,6 +40,8 @@ export default function NewTripPage() {
     title : '',
     imageUrl: '',
     description	:'',
+    lastBookingTime	:'',
+    location	:'',
 
   })
 
@@ -163,6 +165,19 @@ export default function NewTripPage() {
             />
         </div>
         <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.location}
+            </label>
+            <input
+              type='text'
+              
+              value={formData.location}
+              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        
+        <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t.labels.route}
           </label>
@@ -222,6 +237,18 @@ export default function NewTripPage() {
             required
             value={formData.arrivalTime}
             onChange={(e) => setFormData({ ...formData, arrivalTime: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.lastbookingTime}
+          </label>
+          <input
+            type="datetime-local"
+            required
+            value={formData.lastBookingTime}
+            onChange={(e) => setFormData({ ...formData, lastBookingTime: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>

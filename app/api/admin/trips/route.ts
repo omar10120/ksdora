@@ -48,15 +48,22 @@ export async function POST(req: NextRequest) {
     const busId = formData.get('busId') as string;
     const departureTime = formData.get('departureTime') as string;
     const arrivalTime = formData.get('arrivalTime') as string;
+    const lastBookingTime = formData.get('lastBookingTime') as string;
     const price = parseFloat(formData.get('price') as string);
     const title = formData.get('title') as string;
     const description = formData.get('description') as string;
+    const location = formData.get('location') as string;
     const files = formData.getAll('images') as File[];
-
-    if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
+    
+    if (!routeId || !busId || !departureTime || !arrivalTime || !price )  {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
-
+    if( lastBookingTime > departureTime || lastBookingTime > arrivalTime){
+      return NextResponse.json(
+        { error: 'Last booking time must be before departure time and arrival time' },
+        { status: 400 }
+      )
+    }
     const bus = await prisma.bus.findFirst({
       where: { id: busId, status: 'active' },
     });
@@ -116,8 +123,10 @@ export async function POST(req: NextRequest) {
           busId,
           title,
           description,
+          location,
           departureTime: new Date(departureTime),
           arrivalTime: new Date(arrivalTime),
+          lastBookingTime: new Date(lastBookingTime),
           price,
           status: 'scheduled',
           imageUrls: JSON.stringify(imageUrls),
