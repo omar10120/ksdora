@@ -131,7 +131,7 @@ model BookingDetail {
 model RefreshToken {
   id        String   @id @default(uuid()) @db.VarChar(36)
   userId    String   @map("user_id") @db.VarChar(36)
-  token     String   @db.VarChar(255)
+  token     String   @unique @db.VarChar(255)
   expiresAt DateTime @default(now()) @map("expires_at") @db.Timestamp(0)
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamp(0)
   user      User     @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "refresh_tokens_ibfk_1")

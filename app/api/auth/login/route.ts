@@ -54,7 +54,7 @@ export async function POST(req: Request) {
     const token = jwt.sign(
       { userId: user.id , role: user.role },
       process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '7h' }
+      { expiresIn: '3h' }
     )
 
     const refreshToken = jwt.sign(

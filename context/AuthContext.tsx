@@ -1,6 +1,6 @@
 'use client'
 import { createContext, useContext, useEffect, useState } from 'react'
-import { isTokenExpired } from '@/utils/auth'
+import { getValidToken, isTokenExpired } from '@/utils/auth'
 import { useRouter } from 'next/navigation'
 
 interface User {
@@ -33,17 +33,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     checkAuth()
-    // Check token expiration every minute
-    const checkTokenInterval = setInterval(() => {
-      const token = localStorage.getItem('token')
-      if (token && isTokenExpired(token)) {
-        // Token expired, logout user
+  
+    const checkTokenInterval = setInterval(async () => {
+      const refreshToken = localStorage.getItem('refreshToken')
+  
+      // If no refresh token or it's expired, logout
+      if (!refreshToken || isTokenExpired(refreshToken)) {
+        logout()
+        return
+      }
+  
+      // Just trigger getValidToken to refresh access token if needed
+      const token = await getValidToken()
+      if (!token) {
         logout()
       }
-    }, 60000) // Check every minute
-
+    }, 60000)
+  
     return () => clearInterval(checkTokenInterval)
   }, [])
+  
+  
 
   const checkAuth = () => {
     try {
