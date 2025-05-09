@@ -8,18 +8,21 @@ export async function GET(
 ) {
   try {
     const trip = await prisma.trip.findUnique({
+      
       where: { id: params.id },
       include: {
         route: {
           include: {
             departureCity: true,
-            arrivalCity: true
+            arrivalCity: true,
           }
         },
+        
         seats: true,
         bus: true
       }
     })
+  
 
     if (!trip) {
       return NextResponse.json(
@@ -27,8 +30,13 @@ export async function GET(
         { status: 404 }
       )
     }
+     // Parse imageUrls if it's stored as a JSON string
+     const parsedTrip = {
+      ...trip,
+      imageUrls: typeof trip.imageUrls === 'string' ? JSON.parse(trip.imageUrls) : trip.imageUrls
+    }
 
-    return NextResponse.json(trip)
+    return NextResponse.json(parsedTrip)
   } catch (error) {
     return NextResponse.json(
       { error: 'Internal server error trip' },

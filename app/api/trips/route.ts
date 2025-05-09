@@ -53,10 +53,13 @@ export async function GET(req: Request) {
       }
     })
     
-    // const tripsWithLimitedSeats = trips.  map(trip => ({
-    //   ...trip,
-    //   seats: trip.seats.slice(0, limitSeat)
-    // }))
+    if (!trips) {
+      return NextResponse.json(
+        { error: ' not trips found' },
+        { status: 404 }
+      )
+    }
+
 
     const tripsWithLimitedSeats = trips.map(trip => ({
       ...trip,
