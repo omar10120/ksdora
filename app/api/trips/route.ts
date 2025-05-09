@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { createSearchParamsBailoutProxy } from 'next/dist/client/components/searchparams-bailout-proxy'
 
 // Get all trips (existing code)
 export async function GET(req: Request) {
@@ -13,7 +14,7 @@ export async function GET(req: Request) {
     const page = parseInt(searchParams.get('page') || '1')
     const limit = parseInt(searchParams.get('limit') || '10')
     const limitSeat = parseInt(searchParams.get('limitSeat') || '100')
-    
+    const imagesUrls = searchParams.get('imageUrls')
     const skip = (page - 1) * limit
 
 
@@ -52,10 +53,17 @@ export async function GET(req: Request) {
       }
     })
     
+    // const tripsWithLimitedSeats = trips.  map(trip => ({
+    //   ...trip,
+    //   seats: trip.seats.slice(0, limitSeat)
+    // }))
+
     const tripsWithLimitedSeats = trips.map(trip => ({
       ...trip,
+      imageUrls: typeof trip.imageUrls === 'string' ? JSON.parse(trip.imageUrls) : trip.imageUrls,
       seats: trip.seats.slice(0, limitSeat)
     }))
+    
 
     const total = await prisma.trip.count({
       where: {
