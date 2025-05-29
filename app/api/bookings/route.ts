@@ -2,12 +2,13 @@ import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
 import { headers } from 'next/headers'
+import StaticGenerationSearchParamsBailoutProvider from 'next/dist/client/components/static-generation-searchparams-bailout-provider'
 
 export async function POST(req: Request) {
   try {
     const { tripId, seatIds } = await req.json()
-    const headersList = headers() // ✅ middleware-injected headers
-    const userId = headersList.get('userId') // ✅ access injected userId
+    const headersList = headers() // 
+    const userId = headersList.get('userId') 
 
     if (!userId) {
       return NextResponse.json(
@@ -15,7 +16,7 @@ export async function POST(req: Request) {
         { status: 401 }
       )
     }
-
+  
     // Start transaction
     const booking = await prisma.$transaction(async (tx) => {
       // Check if seats are available
@@ -25,7 +26,10 @@ export async function POST(req: Request) {
           status: 'available'
         }
       })
-
+      
+      if (seatIds.length == 0) {
+        throw new Error('You should book one seat at lest')
+      }
       if (seats.length !== seatIds.length) {
         throw new Error('Some seats are not available')
       }
