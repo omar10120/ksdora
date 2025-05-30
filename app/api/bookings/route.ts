@@ -39,7 +39,7 @@ export async function POST(req: Request) {
           tripId,
           status: 'available'
         },
-        take: seatsNumber
+        take: parsedSeats
       });
 
       if (availableSeats.length < seatsNumber) {
