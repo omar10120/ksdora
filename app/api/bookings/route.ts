@@ -1,52 +1,61 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import { Decimal } from '@prisma/client/runtime/library'
+import { Decimal, empty } from '@prisma/client/runtime/library'
 import { headers } from 'next/headers'
 import StaticGenerationSearchParamsBailoutProvider from 'next/dist/client/components/static-generation-searchparams-bailout-provider'
 
+
 export async function POST(req: Request) {
   try {
-    const { tripId, seatIds } = await req.json()
-    const headersList = headers() // 
-    const userId = headersList.get('userId') 
+    const { tripId, seatsNumber } = await req.json();
+    const headersList = headers();
+    const userId = headersList.get('userId');
+    const parsedSeats = parseInt(seatsNumber );
 
     if (!userId) {
       return NextResponse.json(
         { error: 'Authentication required' },
         { status: 401 }
-      )
+      );
     }
-  
-    // Start transaction
+    
+    // if(isNaN(parsedSeats)){
+    //   return NextResponse.json(
+    //       {error : "seatsNumber must be a valid number",},
+    //       {status : 400}
+    //   );
+    // }
+    
+    if (!tripId || isNaN(parsedSeats) || parsedSeats <= 0) {
+      return NextResponse.json(
+        { error: 'Trip ID and a valid number of seats are required' },
+        { status: 400 }
+      );
+    }
+
     const booking = await prisma.$transaction(async (tx) => {
-      // Check if seats are available
-      const seats = await tx.seat.findMany({
+      const availableSeats = await tx.seat.findMany({
         where: {
-          id: { in: seatIds },
+          tripId,
           status: 'available'
-        }
-      })
-      
-      if (seatIds.length == 0) {
-        throw new Error('You should book one seat at lest')
-      }
-      if (seats.length !== seatIds.length) {
-        throw new Error('Some seats are not available')
+        },
+        take: seatsNumber
+      });
+
+      if (availableSeats.length < seatsNumber) {
+        throw new Error(`Only ${availableSeats.length} seats are available`);
       }
 
-      // Get trip details for price calculation
       const trip = await tx.trip.findUnique({
         where: { id: tripId }
-      })
+      });
 
       if (!trip) {
-        throw new Error('Trip not found')
+        throw new Error('Trip not found');
       }
 
-      // Calculate total price
-      const totalPrice = new Decimal(trip.price).mul(seatIds.length)
+      const totalPrice = new Decimal(trip.price).mul(seatsNumber);
 
-      // Create booking
       const booking = await tx.booking.create({
         data: {
           userId,
@@ -54,29 +63,33 @@ export async function POST(req: Request) {
           totalPrice,
           status: 'pending',
           details: {
-            create: seatIds.map((seatId: string) => ({
-              seatId,
+            create: availableSeats.map(seat => ({
+              seatId: seat.id,
               price: trip.price
             }))
           }
         }
-      })
+      });
 
-      // Update seat status
       await tx.seat.updateMany({
-        where: { id: { in: seatIds } },
+        where: {
+          id: { in: availableSeats.map(seat => seat.id) }
+        },
         data: { status: 'booked' }
-      })
+      });
 
-      return booking
-    })
+      return {
+        ...booking,
+        seatIds: availableSeats.map(seat => seat.id)
+      };
+    });
 
-    return NextResponse.json(booking)
+    return NextResponse.json(booking);
   } catch (error) {
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create booking' },
       { status: 500 }
-    )
+    );
   }
 }
 
