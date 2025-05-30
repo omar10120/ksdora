@@ -19,13 +19,7 @@ export async function POST(req: Request) {
       );
     }
     
-    // if(isNaN(parsedSeats)){
-    //   return NextResponse.json(
-    //       {error : "seatsNumber must be a valid number",},
-    //       {status : 400}
-    //   );
-    // }
-    
+
     if (!tripId || isNaN(parsedSeats) || parsedSeats <= 0) {
       return NextResponse.json(
         { error: 'Trip ID and a valid number of seats are required' },

@@ -122,8 +122,8 @@ export default function TripsPage() {
   }
 
   return (
-    <div className={language === 'ar' ? 'rtl' : 'ltr'}>
-      <div className="flex justify-between max-sm:flex-col items-center mb-6 text-black">
+    <div className={`{language === 'ar' ? 'rtl' : 'ltr'}`+""} >
+      <div className="flex justify-between max-sm:flex-col items-center mb-6 text-black  ">
         <h1 className="text-2xl font-semibold text-gray-800 max-sm:w-full">{t.title}</h1>
         <div className="flex items-center space-x-4">
           <div className="relative">
@@ -154,8 +154,8 @@ export default function TripsPage() {
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-scroll">
-        <table className="min-w-full divide-y divide-gray-200" dir="ltr">
+      <div className="bg-white shadow-md rounded-lg overflow-scroll  ">
+        <table className="min-w-full divide-y divide-gray-200 " dir="ltr">
           <thead className="bg-gray-50 ">
             <tr>
                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

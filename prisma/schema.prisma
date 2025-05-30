@@ -73,9 +73,12 @@ model Trip {
   lastBookingTime   DateTime    @map("last_Booking_Time") @db.DateTime(0)
   price         Decimal     @db.Decimal(10, 2)
   status        TripStatus? @default(scheduled)
-  title         String?    
-  description   String?   
-  location   String?    
+  titleAr         String?    
+  titleEn         String?    
+  descriptionAr   String?   
+  descriptionEn   String?   
+  locationAr   String?    
+  locationEn   String?    
   imageUrls     String? 
   bookings      Booking[]
   seats         Seat[]
