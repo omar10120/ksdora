@@ -162,10 +162,10 @@ export default function TripsPage() {
           <thead className="bg-gray-50 ">
             <tr>
                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.title}
+                {t.columns.titleAr}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.title}
+                {t.columns.titleEn}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.route}
@@ -186,16 +186,16 @@ export default function TripsPage() {
                 {t.columns.status}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.description}
+                {t.columns.descriptionAr}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.description}
+                {t.columns.descriptionEn}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.location}
+                {t.columns.locationAr}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.location}
+                {t.columns.locationEn}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 
