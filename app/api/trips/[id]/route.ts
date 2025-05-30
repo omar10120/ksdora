@@ -52,7 +52,7 @@ export async function PUT(
 ) {
   try {
     const body = await req.json()
-    const { routeId, busId, departureTime, arrivalTime, price, status,location,lastBookingTime } = body
+    const { routeId, busId, departureTime, arrivalTime, price, status,locationAr,locationEn,lastBookingTime } = body
 
     if( lastBookingTime > departureTime || lastBookingTime > arrivalTime){
       return NextResponse.json(
@@ -71,7 +71,8 @@ export async function PUT(
         price,
         status,
         lastBookingTime,
-        location
+        locationAr,
+        locationEn
       },
       include: {
         route: {

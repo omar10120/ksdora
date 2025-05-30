@@ -61,9 +61,13 @@ export async function PUT(req: NextRequest) {
     const arrivalTime = formData.get('arrivalTime') as string;
     const lastBookingTime = formData.get('lastBookingTime') as string;
     const price = parseFloat(formData.get('price') as string);
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const location = formData.get('location') as string;
+    const titleAr = formData.get('titleAr') as string;
+    const titleEn = formData.get('titleEn') as string;
+    const descriptionAr = formData.get('descriptionAr') as string;
+    const descriptionEn = formData.get('descriptionEn') as string;
+    const locationAr = formData.get('locationAr') as string;
+    const locationEn = formData.get('locationEn') as string;
+
     const existingImages = JSON.parse(formData.get('existingImages') as string) as string[];
     const files = formData.getAll('images') as File[];
 
@@ -120,9 +124,12 @@ export async function PUT(req: NextRequest) {
       data: {
         routeId,
         busId,
-        title,
-        description,
-        location,
+        titleAr,
+        titleEn,
+        descriptionAr,
+        descriptionEn,
+        locationAr,
+        locationEn,
         departureTime: new Date(departureTime),
         arrivalTime: new Date(arrivalTime),
         lastBookingTime: new Date(lastBookingTime),
@@ -149,7 +156,7 @@ export async function PUT(req: NextRequest) {
 //     const departureTime = formData.get('departureTime') as string;
 //     const arrivalTime = formData.get('arrivalTime') as string;
 //     const price = parseFloat(formData.get('price') as string);
-//     const title = formData.get('title') as string;
+//     const titleAr = formData.get('titleAr') as string;
 //     const description = formData.get('description') as string;
 //     const existingImages = JSON.parse(formData.get('existingImages') as string) as string[];
 //     const files = formData.getAll('images') as File[];
@@ -217,7 +224,7 @@ export async function PUT(req: NextRequest) {
 //       data: {
 //         routeId,
 //         busId,
-//         title,
+//         titleAr,
 //         description,
 //         departureTime: new Date(departureTime),
 //         arrivalTime: new Date(arrivalTime),

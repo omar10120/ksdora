@@ -115,7 +115,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const body = await req.json()
-    const { routeId, busId, departureTime, arrivalTime, price, location,lastBookingTime } = body
+    const { routeId, busId, departureTime, arrivalTime, price, locationAr,locationEn,lastBookingTime } = body
 
     // Validate required fields
     if (!routeId || !busId || !departureTime || !arrivalTime || !price || !lastBookingTime) {
@@ -170,7 +170,8 @@ export async function POST(req: Request) {
           lastBookingTime: new Date(lastBookingTime),
           price,
           status: 'scheduled',
-          location,
+          locationAr,
+          locationEn,
         },
         include: {
           route: {

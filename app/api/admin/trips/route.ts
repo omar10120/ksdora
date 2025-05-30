@@ -50,9 +50,12 @@ export async function POST(req: NextRequest) {
     const arrivalTime = formData.get('arrivalTime') as string;
     const lastBookingTime = formData.get('lastBookingTime') as string;
     const price = parseFloat(formData.get('price') as string);
-    const title = formData.get('title') as string;
-    const description = formData.get('description') as string;
-    const location = formData.get('location') as string;
+    const titleAr = formData.get('titleAr') as string;
+    const titleEn = formData.get('titleEn') as string;
+    const descriptionAr = formData.get('descriptionAr') as string;
+    const descriptionEn = formData.get('descriptionEn') as string;
+    const locationAr = formData.get('locationAr') as string;
+    const locationEn = formData.get('locationEn') as string;
     const files = formData.getAll('images') as File[];
     
     if (!routeId || !busId || !departureTime || !arrivalTime || !price )  {
@@ -121,9 +124,12 @@ export async function POST(req: NextRequest) {
         data: {
           routeId,
           busId,
-          title,
-          description,
-          location,
+          titleAr,
+          titleEn,
+          descriptionEn,
+          descriptionAr,
+          locationAr,
+          locationEn,
           departureTime: new Date(departureTime),
           arrivalTime: new Date(arrivalTime),
           lastBookingTime: new Date(lastBookingTime),
