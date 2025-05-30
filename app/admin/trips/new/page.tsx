@@ -141,13 +141,13 @@ export default function NewTripPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow text-black">
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow text-black" >
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t.labels.titleAr}
             </label>
             <input
-              
+              disabled={loadingProgress}
               type="text"
               required
               value={formData.titleAr}
@@ -160,7 +160,7 @@ export default function NewTripPage() {
               {t.labels.titleEn}
             </label>
             <input
-              
+              disabled={loadingProgress}
               type="text"
               required
               value={formData.titleEn}
@@ -173,6 +173,7 @@ export default function NewTripPage() {
               {t.labels.descriptionAr}
             </label>
             <textarea
+             disabled={loadingProgress}
               // type="text"
               required
               value={formData.descriptionAr}
@@ -185,6 +186,7 @@ export default function NewTripPage() {
               {t.labels.descriptionEn}
             </label>
             <textarea
+              disabled={loadingProgress}
               // type="text"
               required
               value={formData.descriptionEn}
@@ -198,7 +200,7 @@ export default function NewTripPage() {
             </label>
             <input
               type='text'
-              
+              disabled={loadingProgress}
               value={formData.locationEn}
               onChange={(e) => setFormData({ ...formData, locationEn: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -210,7 +212,7 @@ export default function NewTripPage() {
             </label>
             <input
               type='text'
-              
+              disabled={loadingProgress}
               value={formData.locationAr}
               onChange={(e) => setFormData({ ...formData, locationAr: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -223,6 +225,8 @@ export default function NewTripPage() {
           </label>
           <select
             required
+            
+            disabled={loadingProgress}
             value={formData.routeId}
             onChange={(e) => setFormData({ ...formData, routeId: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
@@ -241,6 +245,7 @@ export default function NewTripPage() {
             {t.labels.bus}
           </label>
           <select
+            disabled={loadingProgress}
             required
             value={formData.busId}
             onChange={(e) => setFormData({ ...formData, busId: e.target.value })}
@@ -260,6 +265,7 @@ export default function NewTripPage() {
             {t.labels.departureTime}
           </label>
           <input
+            disabled={loadingProgress}
             type="datetime-local"
             required
             value={formData.departureTime}
@@ -273,6 +279,7 @@ export default function NewTripPage() {
             {t.labels.arrivalTime}
           </label>
           <input
+            disabled={loadingProgress}
             type="datetime-local"
             required
             value={formData.arrivalTime}
@@ -285,6 +292,7 @@ export default function NewTripPage() {
             {t.labels.lastbookingTime}
           </label>
           <input
+            disabled={loadingProgress}
             type="datetime-local"
             required
             value={formData.lastBookingTime}
@@ -298,6 +306,7 @@ export default function NewTripPage() {
             {t.labels.price}
           </label>
           <input
+            disabled={loadingProgress}
             type="number"
             required
             min="0"
@@ -312,6 +321,7 @@ export default function NewTripPage() {
             {t.labels.images}
           </label>
           <input
+            disabled={loadingProgress}
             accept="image/*"
             multiple
             type="file"
