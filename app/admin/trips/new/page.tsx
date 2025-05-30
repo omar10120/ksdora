@@ -144,7 +144,7 @@ export default function NewTripPage() {
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow text-black">
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.title}
+              {t.labels.titleAr}
             </label>
             <input
               
@@ -157,7 +157,7 @@ export default function NewTripPage() {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.title}
+              {t.labels.titleEn}
             </label>
             <input
               
@@ -170,7 +170,7 @@ export default function NewTripPage() {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.description}
+              {t.labels.descriptionAr}
             </label>
             <textarea
               // type="text"
@@ -182,7 +182,7 @@ export default function NewTripPage() {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.description}
+              {t.labels.descriptionEn}
             </label>
             <textarea
               // type="text"
@@ -194,7 +194,7 @@ export default function NewTripPage() {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.location}
+              {t.labels.locationAr}
             </label>
             <input
               type='text'
@@ -206,7 +206,7 @@ export default function NewTripPage() {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.location}
+              {t.labels.locationEn}
             </label>
             <input
               type='text'
