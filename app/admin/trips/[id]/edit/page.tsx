@@ -47,9 +47,12 @@ export default function EditTripPage({ params }: PageProps) {
     arrivalTime: '',
     price: '',
     status: 'scheduled',
-    title: '',
-    description	:'',
-    location:'',
+    titleAr: '',
+    titleEn: '',
+    descriptionAr	:'',
+    descriptionEn	:'',
+    locationAr:'',
+    locationEn:'',
     lastBookingTime:'',
   })
 
@@ -78,9 +81,12 @@ export default function EditTripPage({ params }: PageProps) {
         lastBookingTime: new Date(data.lastBookingTime).toISOString().slice(0, 16),
         price: data.price.toString(),
         status: data.status,
-        title: data.title,
-        description: data.description,
-        location: data.location
+        titleAr: data.titleAr,
+        titleEn: data.titleEn,
+        descriptionAr: data.descriptionAr,
+        descriptionEn: data.descriptionEn,
+        locationAr: data.locationAr,
+        locationEn: data.locationEn
         
         
       })
@@ -142,10 +148,13 @@ export default function EditTripPage({ params }: PageProps) {
       form.append('lastBookingTime', formData.lastBookingTime);
       form.append('price', formData.price);
       form.append('status', formData.status);
-      form.append('title', formData.title);
-      form.append('description', formData.description);
+      form.append('titleAr', formData.titleAr);
+      form.append('titleEn', formData.titleEn);
+      form.append('descriptionAr', formData.descriptionAr);
+      form.append('descriptionEn', formData.descriptionEn);
       
-      form.append('location', formData.location);
+      form.append('locationAr', formData.locationAr);
+      form.append('locationEn', formData.locationEn);
       form.append('existingImages', JSON.stringify(existingImages));
   
       newImages.forEach((file) => {
@@ -189,13 +198,25 @@ export default function EditTripPage({ params }: PageProps) {
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.title}
+              {t.labels.titleAr}
             </label>
             <input
               type="text"
               
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              value={formData.titleAr}
+              onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.titleEn}
+            </label>
+            <input
+              type="text"
+              
+              value={formData.titleEn}
+              onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
@@ -310,25 +331,49 @@ export default function EditTripPage({ params }: PageProps) {
 
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.description}
+              {t.labels.descriptionAr}
             </label>
             <input
               type="text"
               
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={formData.descriptionAr}
+              onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.location}
+              {t.labels.descriptionEn}
             </label>
             <input
               type="text"
               
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              value={formData.descriptionEn}
+              onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.locationAr}
+            </label>
+            <input
+              type="text"
+              
+              value={formData.locationAr}
+              onChange={(e) => setFormData({ ...formData, locationAr: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.locationEn}
+            </label>
+            <input
+              type="text"
+              
+              value={formData.locationEn}
+              onChange={(e) => setFormData({ ...formData, locationEn: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
