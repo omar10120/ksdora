@@ -1,22 +1,19 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
 import { createSearchParamsBailoutProxy } from 'next/dist/client/components/searchparams-bailout-proxy'
-
+import { headers } from 'next/headers';
 // Get all trips (existing code)
+
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url)
-    const from = searchParams.get('from')
-    const to = searchParams.get('to')
-    const date = searchParams.get('date')
-    
-    
-    const page = parseInt(searchParams.get('page') || '1')
-    const limit = parseInt(searchParams.get('limit') || '10')
-    const limitSeat = parseInt(searchParams.get('limitSeat') || '100')
-    const imagesUrls = searchParams.get('imageUrls')
-    const skip = (page - 1) * limit
+    const { searchParams } = new URL(req.url);
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
+    const date = searchParams.get('date');
 
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const skip = (page - 1) * limit;
 
     const trips = await prisma.trip.findMany({
       skip,
@@ -26,12 +23,8 @@ export async function GET(req: Request) {
         AND: [
           {
             route: {
-              departureCity: from ? {
-                name: { contains: from }
-              } : undefined,
-              arrivalCity: to ? {
-                name: { contains: to }
-              } : undefined
+              departureCity: from ? { name: { contains: from } } : undefined,
+              arrivalCity: to ? { name: { contains: to } } : undefined
             }
           },
           date ? {
@@ -49,24 +42,22 @@ export async function GET(req: Request) {
             arrivalCity: true
           }
         },
-        seats: true
+        seats: {
+          where: { status: 'available' },
+          select: { id: true }
+        }
       }
-    })
-    
-    if (!trips) {
-      return NextResponse.json(
-        { error: ' not trips found' },
-        { status: 404 }
-      )
+    });
+
+    if (!trips || trips.length === 0) {
+      return NextResponse.json({ error: 'No trips found' }, { status: 404 });
     }
 
-
-    const tripsWithLimitedSeats = trips.map(trip => ({
+    const tripsData = trips.map(({ seats, imageUrls, ...trip }) => ({
       ...trip,
-      imageUrls: typeof trip.imageUrls === 'string' ? JSON.parse(trip.imageUrls) : trip.imageUrls,
-      seats: trip.seats.slice(0, limitSeat)
-    }))
-    
+      imageUrls: typeof imageUrls === 'string' ? JSON.parse(imageUrls) : imageUrls,
+      totalAvailableSeats: seats.length
+    }));
 
     const total = await prisma.trip.count({
       where: {
@@ -74,12 +65,8 @@ export async function GET(req: Request) {
         AND: [
           {
             route: {
-              departureCity: from ? {
-                name: { contains: from }
-              } : undefined,
-              arrivalCity: to ? {
-                name: { contains: to }
-              } : undefined
+              departureCity: from ? { name: { contains: from } } : undefined,
+              arrivalCity: to ? { name: { contains: to } } : undefined
             }
           },
           date ? {
@@ -90,26 +77,130 @@ export async function GET(req: Request) {
           } : {}
         ]
       }
-    })
-    
+    });
+
     return NextResponse.json({
-      trips : tripsWithLimitedSeats,
+      trips: tripsData,
       pagination: {
         total,
         page,
         limit,
-        totalPages: Math.ceil(total / limit),
-        limitSeat
+        totalPages: Math.ceil(total / limit)
       }
-    })
-    
+    });
+
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error trips' },
-      { status: 500 }
-    )
+    console.error('Get trips error:', error);
+    return NextResponse.json({ error: 'Internal server error trips' }, { status: 500 });
   }
 }
+
+//Get MyTrips id 
+
+
+// export async function GET(req: Request) {
+  //   try {
+//     const { searchParams } = new URL(req.url);
+//     const from = searchParams.get('from');
+//     const to = searchParams.get('to');
+//     const date = searchParams.get('date');
+
+//     const page = parseInt(searchParams.get('page') || '1');
+//     const limit = parseInt(searchParams.get('limit') || '10');
+//     const limitSeat = parseInt(searchParams.get('limitSeat') || '1000');
+//     const skip = (page - 1) * limit;
+
+//     const trips = await prisma.trip.findMany({
+//       skip,
+//       take: limit,
+//       where: {
+//         status: 'scheduled',
+//         AND: [
+//           {
+//             route: {
+//               departureCity: from ? {
+//                 name: { contains: from }
+//               } : undefined,
+//               arrivalCity: to ? {
+//                 name: { contains: to }
+//               } : undefined
+//             }
+//           },
+//           date ? {
+//             departureTime: {
+//               gte: new Date(date),
+//               lt: new Date(new Date(date).setDate(new Date(date).getDate() + 1))
+//             }
+//           } : {}
+//         ]
+//       },
+//       include: {
+//         route: {
+//           include: {
+//             departureCity: true,
+//             arrivalCity: true
+//           }
+//         },
+//         seats: {
+//           where: {
+//             status: 'available'
+//           }
+//         }
+//       }
+//     });
+
+//     if (!trips || trips.length === 0) {
+//       return NextResponse.json({ error: 'No trips found' }, { status: 404 });
+//     }
+
+//     const tripsWithFilteredSeats = trips.map(trip => ({
+//       ...trip,
+//       imageUrls: typeof trip.imageUrls === 'string' ? JSON.parse(trip.imageUrls) : trip.imageUrls,
+//       seats: trip.seats,
+//       totalAvailableSeats: trip.seats.length
+//     }));
+
+//     const total = await prisma.trip.count({
+//       where: {
+//         status: 'scheduled',
+//         AND: [
+//           {
+//             route: {
+//               departureCity: from ? {
+//                 name: { contains: from }
+//               } : undefined,
+//               arrivalCity: to ? {
+//                 name: { contains: to }
+//               } : undefined
+//             }
+//           },
+//           date ? {
+//             departureTime: {
+//               gte: new Date(date),
+//               lt: new Date(new Date(date).setDate(new Date(date).getDate() + 1))
+//             }
+//           } : {}
+//         ]
+//       }
+//     });
+
+//     return NextResponse.json({
+//       trips: tripsWithFilteredSeats,
+//       pagination: {
+//         total,
+//         page,
+//         limit,
+//         totalPages: Math.ceil(total / limit),
+//         limitSeat
+//       }
+//     });
+
+//   } catch (error) {
+//     console.error('Get trips error:', error);
+//     return NextResponse.json({ error: 'Internal server error trips' }, { status: 500 });
+//   }
+// }
+
 
 // Create new trip
 export async function POST(req: Request) {
@@ -214,3 +305,10 @@ export async function POST(req: Request) {
     )
   }
 } 
+
+
+//Get MyTrips id 
+
+
+
+
