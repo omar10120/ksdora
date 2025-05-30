@@ -11,9 +11,12 @@ import {
 import { useLanguage } from '@/context/LanguageContext'
 
 interface Trip {
-  title:string,
-  description:string,
-  location:string,
+  titleAr:string,
+  titleEn:string,
+  descriptionAr:string,
+  descriptionEn:string,
+  locationAr:string,
+  locationEn:string,
   imageUrls:string,
   id: string
   routeId: string
@@ -162,6 +165,9 @@ export default function TripsPage() {
                 {t.columns.title}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.title}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.route}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -183,6 +189,12 @@ export default function TripsPage() {
                 {t.columns.description}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.description}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                {t.columns.location}
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.location}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -199,7 +211,12 @@ export default function TripsPage() {
               <tr key={trip.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-900">
-                    {trip.title}
+                    {trip.titleAr}
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="text-sm text-gray-900">
+                    {trip.titleEn}
                   </div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
@@ -231,10 +248,16 @@ export default function TripsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.location}
+                  {trip.locationAr}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {trip.locationEn}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
-                    {trip.description}
+                    {trip.descriptionAr}
+                </td> 
+                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
+                    {trip.descriptionEn}
                 </td> 
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px] flex overflow-x-scroll">
                   {trip.imageUrls}

@@ -37,11 +37,14 @@ export default function NewTripPage() {
     departureTime: '',
     arrivalTime: '',
     price: '',
-    title : '',
+    titleAr : '',
+    titleEn : '',
     imageUrl: '',
-    description	:'',
+    descriptionAr	:'',
+    descriptionEn	:'',
     lastBookingTime	:'',
-    location	:'',
+    locationAr	:'',
+    locationEn	:'',
 
   })
 
@@ -147,8 +150,21 @@ export default function NewTripPage() {
               
               type="text"
               required
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              value={formData.titleAr}
+              onChange={(e) => setFormData({ ...formData, titleAr: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.title}
+            </label>
+            <input
+              
+              type="text"
+              required
+              value={formData.titleEn}
+              onChange={(e) => setFormData({ ...formData, titleEn: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
@@ -159,8 +175,20 @@ export default function NewTripPage() {
             <textarea
               // type="text"
               required
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              value={formData.descriptionAr}
+              onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.description}
+            </label>
+            <textarea
+              // type="text"
+              required
+              value={formData.descriptionEn}
+              onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
@@ -171,8 +199,20 @@ export default function NewTripPage() {
             <input
               type='text'
               
-              value={formData.location}
-              onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+              value={formData.locationEn}
+              onChange={(e) => setFormData({ ...formData, locationEn: e.target.value })}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            />
+        </div>
+        <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              {t.labels.location}
+            </label>
+            <input
+              type='text'
+              
+              value={formData.locationAr}
+              onChange={(e) => setFormData({ ...formData, locationAr: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
