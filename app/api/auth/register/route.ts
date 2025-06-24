@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { sendVerificationEmail } from '@/utils/emailService'
 import { ok } from 'assert'
+import { Varela } from 'next/font/google'
 
 // Password validation function
 const isValidPassword = (password: string): boolean => {
@@ -25,9 +26,14 @@ const isValidPassword = (password: string): boolean => {
 
 export async function POST(req: Request) {
   try {
-    const { email, password, name, phone } = await req.json()
+    var { email, password , name, phone } = await req.json()
 
     // Validate required fields
+    // if (!email || !password || !name) {
+    if(!password){
+       password = "Aa@123456"
+     
+    }
     if (!email || !password || !name) {
       return NextResponse.json(
         { error: 'Missing required fields' },

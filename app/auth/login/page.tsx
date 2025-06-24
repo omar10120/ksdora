@@ -7,7 +7,9 @@ import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline'
 import { useLanguage } from '@/context/LanguageContext'
 import LogoImage from '@/public/images/logo.png'
 import StoreIcon from '@/public/images/store-icon.png'
+
 import Image from 'next/image'
+import GoogleLoginButton from '../../../components/GoogleLoginButton'
 import { 
   
   ArrowLeftIcon,
@@ -188,6 +190,8 @@ export default function LoginPage() {
             
           </div>
         </form>
+            <div className='py-4 justify-center flex text-black'>Or</div>  
+            <div className='w-full flex justify-center my-4'><GoogleLoginButton /></div>
         <div className='w-full flex py-4'>
             <Link href="/" className="text-indigo-600 hover:text-indigo-700 flex items-center gap-2">
               {language === 'en'? 
@@ -195,6 +199,7 @@ export default function LoginPage() {
                 :
                 <ArrowLeftIcon className="h-4 w-4 text-indigo-700 " />
               }
+              
               {translations.auth.login.backHome}
             </Link>
         </div>
@@ -210,6 +215,7 @@ export default function LoginPage() {
           <h1 className="text-2xl md:text-4xl font-bold mb-4">
             {(translations.auth.login.title).toUpperCase()} !
           </h1>
+          
         </div>
       </div>
     </div>

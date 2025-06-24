@@ -9,7 +9,7 @@ import { useLanguage } from '@/context/LanguageContext'
 import LogoImage from '@/public/images/logo.png'
 import StoreIcon from '@/public/images/store.png'
 import Image from 'next/image'
-
+import GoogleRegisterButton from '@/components/GoogleLoginButton'
 export default function RegisterPage() {
   const router = useRouter()
   const { login } = useAuth()
@@ -23,6 +23,8 @@ export default function RegisterPage() {
   })
   const [error, setError] = useState('')
   const [isLoading, setIsLoading] = useState(false)
+
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -76,7 +78,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col md:flex-row">
+    <div className="min-h-screen flex flex-col md:flex-row ">
       {/* Left Panel */}
       <div className="w-full md:w-1/3 bg-white p-4 md:p-8 flex flex-col justify-center min-h-screen md:min-h-0">
         <div className="mb-4 md:mb-8">
@@ -171,9 +173,11 @@ export default function RegisterPage() {
           >
             {isLoading ? translations.auth.register.button.creating : translations.auth.register.button.signup}
           </button>
-
+            <div className='py-4 justify-center flex'>Or</div>  
+            <GoogleRegisterButton/>
           <div className="text-center mt-4">
             <Link href="/auth/login" className="text-indigo-600 hover:text-indigo-700 text-sm hover:underline">
+            
               {translations.auth.register.haveAccount}
             </Link>
           </div>
