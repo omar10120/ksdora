@@ -3,13 +3,13 @@ import { initializeApp, getApps, getApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyB3heCbqg7OmshC4TAJrLOlpB8lxzcW3bA",
-  authDomain: "ksdora-7fe98.firebaseapp.com",
-  projectId: "ksdora-7fe98",
-  storageBucket: "ksdora-7fe98.firebasestorage.app",
-  messagingSenderId: "335865524970",
-  appId: "1:335865524970:web:7f86cec6bff9e298de5d93",
-  measurementId: "G-W5QTFNESLB"
+  apiKey: process.env.API_KEY,
+  authDomain: process.env.AUTH_DOMAIN,
+  projectId: process.env.PRODUCT_ID,
+  storageBucket: process.env.STORAGE_BUCKET,
+  messagingSenderId: process.env.MESSAGING_SENDER_ID,
+  appId: process.env.APP_ID,
+  measurementId: process.env.MEASURMENT_ID
 };
 
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();

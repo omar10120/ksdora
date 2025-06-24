@@ -18,7 +18,7 @@ export default function GoogleRegisterButton() {
 
     try {
       // Firebase popup for Google Sign-In
-      const result = await signInWithPopup(auth, provider)
+    const result = await signInWithPopup(auth, provider)
       const firebaseUser = result.user
 
       // Get Firebase ID token

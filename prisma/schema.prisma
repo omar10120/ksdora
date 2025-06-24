@@ -7,24 +7,19 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum UserRole {
-  USER
-  ADMIN
-}
-
 model User {
-  id                String    @id @default(uuid())
-  email             String    @unique
+  id                String         @id @default(uuid())
+  email             String         @unique
   password          String
   name              String
   phone             String?
-  emailVerified     Boolean   @default(false)
-  role          UserRole    @default(USER)
-  verificationToken String?   @unique
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  bookings      Booking[]
-  refreshTokens RefreshToken[]
+  emailVerified     Boolean        @default(false)
+  role              UserRole       @default(USER)
+  verificationToken String?        @unique
+  createdAt         DateTime       @default(now()) @map("created_at")
+  updatedAt         DateTime       @updatedAt @map("updated_at")
+  bookings          Booking[]
+  refreshTokens     RefreshToken[]
 
   @@map("users")
 }
@@ -65,25 +60,25 @@ model Bus {
 }
 
 model Trip {
-  id            String      @id @default(uuid()) @db.VarChar(36)
-  routeId       String      @map("route_id") @db.VarChar(36)
-  busId         String      @map("bus_id") @db.VarChar(36)
-  departureTime DateTime    @map("departure_time") @db.DateTime(0)
-  arrivalTime   DateTime    @map("arrival_time") @db.DateTime(0)
-  lastBookingTime   DateTime    @map("last_Booking_Time") @db.DateTime(0)
-  price         Decimal     @db.Decimal(10, 2)
-  status        TripStatus? @default(scheduled)
-  titleAr         String?    
-  titleEn         String?    
-  descriptionAr   String?   
-  descriptionEn   String?   
-  locationAr   String?    
-  locationEn   String?    
-  imageUrls     String? 
-  bookings      Booking[]
-  seats         Seat[]
-  route         Route       @relation(fields: [routeId], references: [id], onUpdate: Restrict, map: "trips_ibfk_1")
-  bus           Bus         @relation(fields: [busId], references: [id], onUpdate: Restrict, map: "trips_ibfk_2")
+  id              String      @id @default(uuid()) @db.VarChar(36)
+  routeId         String      @map("route_id") @db.VarChar(36)
+  busId           String      @map("bus_id") @db.VarChar(36)
+  departureTime   DateTime    @map("departure_time") @db.DateTime(0)
+  arrivalTime     DateTime    @map("arrival_time") @db.DateTime(0)
+  lastBookingTime DateTime    @map("last_Booking_Time") @db.DateTime(0)
+  price           Decimal     @db.Decimal(10, 2)
+  status          TripStatus? @default(scheduled)
+  titleAr         String?
+  titleEn         String?
+  descriptionAr   String?
+  descriptionEn   String?
+  locationAr      String?
+  locationEn      String?
+  imageUrls       String?
+  bookings        Booking[]
+  seats           Seat[]
+  route           Route       @relation(fields: [routeId], references: [id], onUpdate: Restrict, map: "trips_ibfk_1")
+  bus             Bus         @relation(fields: [busId], references: [id], onUpdate: Restrict, map: "trips_ibfk_2")
 
   @@index([busId], map: "bus_id")
   @@index([routeId], map: "route_id")
@@ -143,6 +138,10 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+enum UserRole {
+  USER
+  ADMIN
+}
 
 enum BusStatus {
   active
@@ -164,7 +163,6 @@ enum SeatStatus {
   booked
   reserved
   blocked
-
 }
 
 enum BookingStatus {
