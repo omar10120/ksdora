@@ -83,7 +83,7 @@ export default function ForgotPasswordPage() {
             >
               {option === 'email' ? 'Email' : 'Phone'}
             </button>
-          ))}s
+          ))}
         </div> */}
 
         {error && (

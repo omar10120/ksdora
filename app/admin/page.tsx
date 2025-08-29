@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
-import StatsCard from '../../components/admin/StatsCard'
-import RecentBookings from '../../components/admin/RecentBookings'
+import StatsCard from '@/components/admin/StatsCard'
+import RecentBookings from '@/components/admin/RecentBookings'
 import { useLanguage } from '@/context/LanguageContext'
 
 
@@ -67,7 +67,7 @@ const [stats, setStats] = useState({
         />
         <StatsCard 
           title={translations.dashboard.home.summary.totalRevenue}
-          value={`$${stats.totalRevenue || 0} `}
+          value={`SYP${stats.totalRevenue || 0} `}
           icon={<CurrencyDollarIcon className="h-6 w-6" />}
           color="bg-yellow-500"
         />
