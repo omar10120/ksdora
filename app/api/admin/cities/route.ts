@@ -21,12 +21,18 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json()
-    const { name, nameAr } = body
+    const { name, nameAr , countryId } = body
 
     // Validate required fields
     if (!name || !nameAr) {
       return NextResponse.json(
         { error: 'Name and Arabic name are required' },
+        { status: 400 }
+      )
+    }
+    if (!countryId) {
+      return NextResponse.json(
+        { error: 'country Id are required' },
         { status: 400 }
       )
     }
@@ -36,7 +42,8 @@ export async function POST(request: Request) {
       where: {
         OR: [
           { name },
-          { nameAr }
+          { nameAr },
+          { countryId}
         ]
       }
     })
@@ -51,7 +58,8 @@ export async function POST(request: Request) {
     const city = await prisma.city.create({
       data: {
         name,
-        nameAr
+        nameAr,
+        countryId
       }
     })
 

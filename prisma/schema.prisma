@@ -20,16 +20,30 @@ model User {
   updatedAt         DateTime       @updatedAt @map("updated_at")
   bookings          Booking[]
   refreshTokens     RefreshToken[]
+  ratings           Rating[]
+  feedbacks         Feedback[]
 
   @@map("users")
 }
 
+model Country {
+  id      String  @id @default(uuid()) @db.VarChar(36)
+  name    String  @db.VarChar(255)
+  nameAr  String  @map("name_ar") @db.VarChar(255)
+  code    String? @db.VarChar(2)
+  cities  City[]
+
+  @@map("countries")
+}
+
 model City {
-  id              String  @id @default(uuid()) @db.VarChar(36)
-  name            String  @db.VarChar(255)
-  nameAr          String  @map("name_ar") @db.VarChar(255)
-  departureRoutes Route[] @relation("departure")
-  arrivalRoutes   Route[] @relation("arrival")
+  id              String   @id @default(uuid()) @db.VarChar(36)
+  name            String   @db.VarChar(255)
+  nameAr          String   @map("name_ar") @db.VarChar(255)
+  countryId       String   @map("country_id") @db.VarChar(36)
+  country         Country  @relation(fields: [countryId], references: [id], onUpdate: Restrict)
+  departureRoutes Route[]  @relation("departure")
+  arrivalRoutes   Route[]  @relation("arrival")
 
   @@map("cities")
 }
@@ -75,8 +89,13 @@ model Trip {
   locationAr      String?
   locationEn      String?
   imageUrls       String?
+  createdAt       DateTime    @default(now()) @map("created_at")
+  updatedAt       DateTime    @updatedAt @map("updated_at")
   bookings        Booking[]
   seats           Seat[]
+  ratings         Rating[]
+  feedbacks       Feedback[]
+  ads             Ad[]
   route           Route       @relation(fields: [routeId], references: [id], onUpdate: Restrict, map: "trips_ibfk_1")
   bus             Bus         @relation(fields: [busId], references: [id], onUpdate: Restrict, map: "trips_ibfk_2")
 
@@ -105,6 +124,9 @@ model Booking {
   status      BookingStatus?  @default(pending)
   totalPrice  Decimal         @map("total_price") @db.Decimal(10, 2)
   details     BookingDetail[]
+  bill        Bill?
+  ratings     Rating[]
+  feedbacks   Feedback[]
   user        User            @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "bookings_ibfk_1")
   trip        Trip            @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "bookings_ibfk_2")
 
@@ -138,6 +160,87 @@ model RefreshToken {
   @@map("refresh_tokens")
 }
 
+model Bill {
+  id         String    @id @default(uuid()) @db.VarChar(36)
+  bookingId  String    @unique @map("booking_id") @db.VarChar(36)
+  amount     Decimal   @db.Decimal(10, 2)
+  status     BillStatus @default(unpaid)
+  createdAt  DateTime  @default(now()) @map("created_at")
+  updatedAt  DateTime  @updatedAt @map("updated_at")
+  booking    Booking   @relation(fields: [bookingId], references: [id], onUpdate: Restrict, map: "bills_ibfk_1")
+  payments   Payment[]
+
+  @@index([bookingId], map: "booking_id")
+  @@map("bills")
+}
+
+model Payment {
+  id            String        @id @default(uuid()) @db.VarChar(36)
+  billId        String        @map("bill_id") @db.VarChar(36)
+  amount        Decimal       @db.Decimal(10, 2)
+  method        PaymentMethod
+  status        PaymentStatus @default(pending)
+  transactionId String?       @unique
+  paidAt        DateTime?     @map("paid_at")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  bill          Bill          @relation(fields: [billId], references: [id], onUpdate: Restrict, map: "payments_ibfk_1")
+
+  @@index([billId], map: "bill_id")
+  @@map("payments")
+}
+
+model Rating {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  bookingId String   @map("booking_id") @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  tripId    String   @map("trip_id") @db.VarChar(36)
+  rating    Int
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  booking   Booking  @relation(fields: [bookingId], references: [id], onUpdate: Restrict, map: "ratings_ibfk_1")
+  user      User     @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "ratings_ibfk_2")
+  trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "ratings_ibfk_3")
+
+  @@index([bookingId], map: "booking_id")
+  @@index([userId], map: "user_id")
+  @@index([tripId], map: "trip_id")
+  @@map("ratings")
+}
+
+model Feedback {
+  id        String   @id @default(uuid()) @db.VarChar(36)
+  bookingId String   @map("booking_id") @db.VarChar(36)
+  userId    String   @map("user_id") @db.VarChar(36)
+  tripId    String   @map("trip_id") @db.VarChar(36)
+  message   String   @db.Text
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+  booking   Booking  @relation(fields: [bookingId], references: [id], onUpdate: Restrict, map: "feedbacks_ibfk_1")
+  user      User     @relation(fields: [userId], references: [id], onUpdate: Restrict, map: "feedbacks_ibfk_2")
+  trip      Trip     @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "feedbacks_ibfk_3")
+
+  @@index([bookingId], map: "booking_id")
+  @@index([userId], map: "user_id")
+  @@index([tripId], map: "trip_id")
+  @@map("feedbacks")
+}
+
+model Ad {
+  id          String   @id @default(uuid()) @db.VarChar(36)
+  imageUrl    String   @map("image_url") @db.VarChar(255)
+  url         String   @db.VarChar(255)
+  description String?  @db.Text
+  tripId      String?  @map("trip_id") @db.VarChar(36)
+  trip        Trip?    @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "ads_ibfk_1")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([tripId], map: "trip_id")
+  @@map("ads")
+}
+
+
 enum UserRole {
   USER
   ADMIN
@@ -170,4 +273,22 @@ enum BookingStatus {
   confirmed
   cancelled
   completed
+}
+
+enum BillStatus {
+  unpaid
+  paid
+  cancelled
+}
+
+enum PaymentMethod {
+  cash
+  bank_transfer
+  company_alharam
+}
+
+enum PaymentStatus {
+  pending
+  successful
+  failed
 }

@@ -27,7 +27,7 @@ export const en = {
       button: "View Available Routes"
     }
   },
-  brand: 'ksdora',
+  brand: 'kzdora',
   bookings: {
     title: 'My Bookings',
     status: {

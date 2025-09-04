@@ -141,7 +141,7 @@ export default function NewTripPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow text-black" >
+      <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow text-black"  >
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               {t.labels.titleAr}
