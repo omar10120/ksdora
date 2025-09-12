@@ -67,8 +67,8 @@ export default function BusesPage() {
       const data = await response.json()
   
       // Ensure data is an array
-      if (Array.isArray(data)) {
-        setBuses(data)
+      if (Array.isArray(data.data)) {
+        setBuses(data.data)
       } else {
         console.error('Invalid response format for buses:', data)
         setBuses([]) // fallback

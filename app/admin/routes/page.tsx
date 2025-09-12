@@ -54,7 +54,7 @@ export default function RoutesPage() {
         }
       })
       const data = await response.json()
-      setRoutes(data)
+      setRoutes(data.data)
     } catch (error) {
       console.error('Error fetching routes:', error)
     } finally {

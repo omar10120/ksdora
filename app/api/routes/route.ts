@@ -1,9 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET(req: Request) {
-  try {
-    const { searchParams } = new URL(req.url)
+export const GET = asyncHandler(async (request: NextRequest) => {
+ try {
+    const { searchParams } = new URL(request.url)
     const departureCityId = searchParams.get('from')
     const arrivalCityId = searchParams.get('to')
 
@@ -26,24 +29,21 @@ export async function GET(req: Request) {
       }
     })
 
-    return NextResponse.json(routes)
+    return ApiResponseBuilder.success(routes, SuccessMessages.RETRIEVED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error routes' },
-      { status: 500 }
-    )
+    throw ApiError.database('Failed to get routes')
   }
-}
+})
 
-export async function POST(req: Request) {
+export const POST = asyncHandler(async (request: NextRequest) => {
   try {
-    const body = await req.json()
+    const body = await request.json()
     const { departureCityId, arrivalCityId, distance } = body
 
     if (!departureCityId || !arrivalCityId) {
-      return NextResponse.json(
-        { error: 'Departure and arrival cities are required' },
-        { status: 400 }
+      return ApiResponseBuilder.validationError(
+        { departureCityId: ['Departure and arrival cities are required'], arrivalCityId: ['Departure and arrival cities are required'] },
+        ErrorMessages.VALIDATION_FAILED
       )
     }
 
@@ -54,10 +54,7 @@ export async function POST(req: Request) {
     ])
 
     if (!departureCity || !arrivalCity) {
-      return NextResponse.json(
-        { error: 'One or both cities not found' },
-        { status: 404 }
-      )
+      return ApiResponseBuilder.notFound('One or both cities')
     }
 
     // Check if route already exists
@@ -71,10 +68,7 @@ export async function POST(req: Request) {
     })
 
     if (existingRoute) {
-      return NextResponse.json(
-        { error: 'Route already exists' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.conflict('Route already exists')
     }
 
     const route = await prisma.route.create({
@@ -89,11 +83,9 @@ export async function POST(req: Request) {
       }
     })
 
-    return NextResponse.json(route)
+    return ApiResponseBuilder.success(route, SuccessMessages.CREATED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to create route' },
-      { status: 500 }
-    )
+    throw ApiError.database('Failed to create route')
   }
-}
+ 
+})

@@ -358,6 +358,7 @@ export const ar = {
         buses: 'الحافلات',
         routes: 'المسارات',
         cities: 'المدن',
+        countries: 'البلدان',
         reports: 'التقارير',
         settings: 'الإعدادات'
       },
@@ -434,8 +435,8 @@ export const ar = {
           titleEn: 'العنوان (انكليزي)',
           descriptionAr	: ' شرح (عربي)',
           descriptionEn	: 'شرح (انكليزي)',
-          locationAr	: 'الموقع (عربي)',
-          locationEn	: '(انكليزي) الموقع',
+          latitude	: 'الموقع (latitude)',
+          longitude	: 'الموقع (longitude)',
           imageurl: 'مسار الصورة',
           route: 'المسار',
           bus: 'الحافلة',
@@ -469,8 +470,8 @@ export const ar = {
             titleEn: 'العنوان (انكليزي)',
             descriptionAr	: ' شرح (عربي)',
             descriptionEn	: 'شرح (انكليزي)',
-            locationAr	: 'الموقع (عربي)',
-            locationEn	: '(انكليزي) الموقع',
+            latitude	: 'الموقع (latitude)',
+            longitude	: ' الموقع (longitude)',
             route: 'المسار',
             bus: 'الحافلة',
             departureTime: 'وقت المغادرة',
@@ -580,7 +581,8 @@ export const ar = {
           nameEn: 'الاسم (إنجليزي)',
           nameAr: 'الاسم (عربي)',
           routes: 'المسارات',
-          actions: 'إجراءات'
+          actions: 'إجراءات',
+          countryId: 'رقم البلد '
         },
         delete: {
           title: 'حذف المدينة',
@@ -597,11 +599,13 @@ export const ar = {
           },
           labels: {
             nameEn: 'الاسم (إنجليزي)',
-            nameAr: 'الاسم (عربي)'
+            nameAr: 'الاسم (عربي)',
+            countryId: 'بلد'
           },
           placeholders: {
             nameEn: 'جدة',
-            nameAr: 'جدة'
+            nameAr: 'جدة',
+            countryId: 'بلد'
           },
           buttons: {
             create: 'إنشاء المدينة',
@@ -618,6 +622,59 @@ export const ar = {
           success: {
             created: 'تم إنشاء المدينة بنجاح',
             updated: 'تم تحديث المدينة بنجاح'
+          }
+        }
+      },
+      countries: {
+        title: 'countries Management',
+        search: {
+          placeholder: 'Search countries...'
+        },
+        addButton: 'Add Countery',
+        columns: {
+          nameEn: 'Name (English)',
+          nameAr: 'Name (Arabic)',
+          actions: 'Actions',
+          code: 'Code'
+        },
+        delete: {
+          title: 'Delete Country',
+          message: 'Are you sure you want to delete this Country? This action cannot be undone.',
+          confirm: 'Delete',
+          cancel: 'Cancel',
+          success: 'City deleted successfully',
+          error: 'Failed to delete Country'
+        },
+        form: {
+          title: {
+            new: 'Add New Country',
+            edit: 'Edit Country'
+          },
+          labels: {
+            nameEn: 'Name (English)',
+            nameAr: 'Name (Arabic)',
+            code: 'code'
+          },
+          placeholders: {
+            nameEn: 'Jeddah',
+            nameAr: 'جدة',
+            code: 'بلد',
+          },
+          buttons: {
+            create: 'Create Country',
+            creating: 'Creating...',
+            update: 'Update Country',
+            updating: 'Updating...',
+            cancel: 'Cancel'
+          },
+          errors: {
+            createFailed: 'Failed to create city',
+            updateFailed: 'Failed to update city',
+            loadFailed: 'Failed to load cities'
+          },
+          success: {
+            created: 'Country created successfully',
+            updated: 'Country updated successfully'
           }
         }
       },

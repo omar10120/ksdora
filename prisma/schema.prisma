@@ -86,8 +86,8 @@ model Trip {
   titleEn         String?
   descriptionAr   String?
   descriptionEn   String?
-  locationAr      String?
-  locationEn      String?
+  latitude  Decimal @db.Decimal(10, 7)
+  longitude Decimal @db.Decimal(10, 7)
   imageUrls       String?
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")

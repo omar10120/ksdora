@@ -202,8 +202,8 @@ async function main() {
         titleEn: 'Damascus - Aleppo Trip',
         descriptionAr: 'رحلة مريحة من دمشق إلى حلب',
         descriptionEn: 'Comfortable trip from Damascus to Aleppo',
-        locationAr: 'محطة الحجاز',
-        locationEn: 'Hijaz Station',
+        longitude: 2421.23,
+        latitude: 42512.2323,
         imageUrls: 'https://example.com/damascus-aleppo.jpg'
       }
     }),
@@ -220,8 +220,8 @@ async function main() {
         titleEn: 'Damascus - Homs Trip',
         descriptionAr: 'رحلة سريعة من دمشق إلى حمص',
         descriptionEn: 'Quick trip from Damascus to Homs',
-        locationAr: 'محطة الحجاز',
-        locationEn: 'Hijaz Station',
+        longitude: 2421.23,
+        latitude: 42512.2323,
         imageUrls: 'https://example.com/damascus-homs.jpg'
       }
     }),
@@ -238,8 +238,8 @@ async function main() {
         titleEn: 'Damascus - Beirut Trip',
         descriptionAr: 'رحلة دولية من دمشق إلى بيروت',
         descriptionEn: 'International trip from Damascus to Beirut',
-        locationAr: 'محطة الحجاز',
-        locationEn: 'Hijaz Station',
+        longitude: 2421.23,
+        latitude: 42512.2323,
         imageUrls: 'https://example.com/damascus-beirut.jpg'
       }
     })
@@ -273,7 +273,7 @@ async function main() {
   if (!existingAdmin) {
     const adminPassword = process.env.ADMIN_PASSWORD || "admin123"
     const hashedPassword = await bcrypt.hash(adminPassword, 10)
-
+    
     await prisma.user.create({
       data: {
         email: 'admin@kzdora.com',
@@ -610,7 +610,7 @@ async function main() {
              paidAt: new Date()
            }
          })
-       } else {
+  } else {
          // Create pending payment for unpaid bills
          await prisma.payment.create({
            data: {

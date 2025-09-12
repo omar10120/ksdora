@@ -4,8 +4,11 @@ import admin from '@/lib/firebaseAdmin'
 import prisma from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 import { generateRefreshToken } from '@/lib/tokenService'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function POST(req: Request) {
+export const POST = asyncHandler(async (req: Request) => {
   try {
     const { idToken } = await req.json()
     const decoded = await admin.auth().verifyIdToken(idToken)
@@ -13,7 +16,7 @@ export async function POST(req: Request) {
     const { email, name, picture } = decoded
 
     if (!email) {
-      return NextResponse.json({ error: 'Missing email from Google account' }, { status: 400 })
+      return ApiResponseBuilder.error('Missing email from Google account', StatusCodes.BAD_REQUEST)
     }
 
     let user = await prisma.user.findUnique({ where: { email } })
@@ -38,7 +41,7 @@ export async function POST(req: Request) {
 
     const refreshToken = await generateRefreshToken(user.id)
 
-    return NextResponse.json({
+    return ApiResponseBuilder.success({
       user: {
         id: user.id,
         name: user.name,
@@ -53,6 +56,6 @@ export async function POST(req: Request) {
 
   } catch (err) {
     console.error('Google login error:', err)
-    return NextResponse.json({ error: 'Invalid ID token or internal error' }, { status: 401 })
+    return ApiResponseBuilder.error('Invalid ID token or internal error', StatusCodes.UNAUTHORIZED)
   }
-}
+})

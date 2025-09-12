@@ -1,19 +1,116 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function PUT(
-  req: Request,
+// GET - Fetch booking by ID
+export const GET = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
-    const { status } = await req.json()
+    const booking = await prisma.booking.findUnique({
+      where: { id: params.id },
+      include: {
+        trip: {
+          include: {
+            route: {
+              include: {
+                departureCity: true,
+                arrivalCity: true
+              }
+            },
+            bus: {
+              select: {
+                plateNumber: true,
+                model: true
+              }
+            }
+          }
+        },
+        details: {
+          include: {
+            seat: true
+          }
+        },
+        user: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true
+          }
+        },
+        bill: {
+          include: {
+            payments: true
+          }
+        },
+        ratings: true,
+        feedbacks: true
+      }
+    })
+
+    if (!booking) {
+      return ApiResponseBuilder.notFound('Booking')
+    }
+
+    return ApiResponseBuilder.success(
+      booking,
+      SuccessMessages.RETRIEVED
+    )
+  } catch (error) {
+    throw ApiError.database('Failed to fetch booking')
+  }
+})
+
+// PUT - Update booking status
+export const PUT = asyncHandler(async (
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) => {
+  try {
+    const body = await request.json()
+    
+    // Validate request data
+    const validationResult = validateRequest(body, {
+      status: { required: true, enum: ['pending', 'confirmed', 'cancelled', 'completed'] }
+    })
+    
+    if (!validationResult.isValid) {
+      const errorMessages: Record<string, string[]> = {}
+      validationResult.errors.forEach(error => {
+        if (!errorMessages[error.field]) {
+          errorMessages[error.field] = []
+        }
+        errorMessages[error.field].push(error.message)
+      })
+      
+      return ApiResponseBuilder.validationError(errorMessages, ErrorMessages.VALIDATION_FAILED)
+    }
+
+    const { status } = body
     const { id } = params
 
-    // Validate status
-    if (!['confirmed', 'cancelled', 'completed'].includes(status)) {
-      return NextResponse.json(
-        { error: 'Invalid status' },
-        { status: 400 }
+    // Check if booking exists
+    const existingBooking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        details: true
+      }
+    })
+
+    if (!existingBooking) {
+      return ApiResponseBuilder.notFound('Booking')
+    }
+
+    // Check if booking can be updated (not completed)
+    if (existingBooking.status === 'completed' && status !== 'completed') {
+      return ApiResponseBuilder.error(
+        'Cannot modify completed booking',
+        StatusCodes.BAD_REQUEST,
+        'Booking is already completed and cannot be modified'
       )
     }
 
@@ -23,9 +120,27 @@ export async function PUT(
         where: { id },
         data: { status },
         include: {
+          trip: {
+            include: {
+              route: {
+                include: {
+                  departureCity: true,
+                  arrivalCity: true
+                }
+              }
+            }
+          },
           details: {
             include: {
-            seat: true
+              seat: true
+            }
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+              phone: true
             }
           }
         }
@@ -36,7 +151,7 @@ export async function PUT(
         await Promise.all(
           updatedBooking.details.map(detail =>
             tx.seat.update({
-              where: { id: detail.seatId  },
+              where: { id: detail.seatId },
               data: { status: 'booked' }
             })
           )
@@ -50,45 +165,53 @@ export async function PUT(
             })
           )
         )
-      
       }
 
       return updatedBooking
     })
 
-    return NextResponse.json(booking)
-  } catch (error) {
-    console.error('Update booking error:', error)
-    return NextResponse.json(
-      { error: 'Failed to update booking' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      booking,
+      SuccessMessages.UPDATED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to update booking')
   }
-}
+})
 
-export async function DELETE(
-  req: Request,
+// DELETE - Delete booking
+export const DELETE = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const { id } = params
 
-    const booking = await prisma.$transaction(async (tx) => {
-      // Get booking details first
-      const bookingToDelete = await tx.booking.findUnique({
-        where: { id },
-        include: {
-          details: true
-        }
-      })
-
-      if (!bookingToDelete) {
-        throw new Error('Booking not found')
+    // Check if booking exists
+    const existingBooking = await prisma.booking.findUnique({
+      where: { id },
+      include: {
+        details: true
       }
+    })
 
+    if (!existingBooking) {
+      return ApiResponseBuilder.notFound('Booking')
+    }
+
+    // Check if booking can be deleted (not completed)
+    if (existingBooking.status === 'completed') {
+      return ApiResponseBuilder.error(
+        'Cannot delete completed booking',
+        StatusCodes.BAD_REQUEST,
+        'Completed bookings cannot be deleted'
+      )
+    }
+
+    const booking = await prisma.$transaction(async (tx) => {
       // Update seats to available
       await Promise.all(
-        bookingToDelete.details.map(detail =>
+        existingBooking.details.map(detail =>
           tx.seat.update({
             where: { id: detail.seatId },
             data: { status: 'available' }
@@ -107,12 +230,11 @@ export async function DELETE(
       })
     })
 
-    return NextResponse.json(booking)
-  } catch (error) {
-    console.error('Delete booking error:', error)
-    return NextResponse.json(
-      { error: 'Failed to delete booking' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      null,
+      SuccessMessages.DELETED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to delete booking')
   }
-}
+})

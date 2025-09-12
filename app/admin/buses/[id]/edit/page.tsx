@@ -36,10 +36,10 @@ export default function EditBusPage({ params }: EditBusPageProps) {
       
       const data = await response.json()
       setFormData({
-        plateNumber: data.plateNumber,
-        capacity: data.capacity.toString(),
-        model: data.model,
-        status: data.status
+        plateNumber: data.data.plateNumber,
+        capacity: data.data.capacity.toString(),
+        model: data.data.model,
+        status: data.data.status
       })
     } catch (err: any) {
       toast.error(t.errors.loadFailed)

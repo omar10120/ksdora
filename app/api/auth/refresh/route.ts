@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function POST(req: NextRequest) {
+export const POST = asyncHandler(async (req: NextRequest) => {
   try {
     const { refreshToken } = await req.json()
 
     if (!refreshToken) {
-      return NextResponse.json({ error: 'No refresh token provided' }, { status: 400 })
+      return ApiResponseBuilder.error('No refresh token provided', StatusCodes.BAD_REQUEST)
     }
 
     const storedToken = await prisma.refreshToken.findUnique({
@@ -15,7 +18,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!storedToken || new Date(storedToken.expiresAt) < new Date()) {
-      return NextResponse.json({ error: 'Invalid or expired refresh token' }, { status: 403 })
+      return ApiResponseBuilder.error('Invalid or expired refresh token', StatusCodes.FORBIDDEN)
     }
 
     const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET || 'your-refresh-secret') as {
@@ -27,7 +30,7 @@ export async function POST(req: NextRequest) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return ApiResponseBuilder.error('User not found', StatusCodes.NOT_FOUND)
     }
 
     // Issue a new access token
@@ -37,9 +40,9 @@ export async function POST(req: NextRequest) {
       { expiresIn: '7h' }
     )
 
-    return NextResponse.json({ token: newAccessToken })
+    return ApiResponseBuilder.success({ token: newAccessToken })
   } catch (error) {
     console.error('Refresh token error:', error)
-    return NextResponse.json({ error: 'Failed to refresh token' }, { status: 500 })
+    return ApiResponseBuilder.error('Failed to refresh token', StatusCodes.INTERNAL_SERVER_ERROR)
   }
-}
+})

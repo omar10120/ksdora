@@ -335,6 +335,7 @@ export const en = {
           buses: 'Buses',
           routes: 'Routes',
           cities: 'Cities',
+          countries: 'Countries',
           reports: 'Reports',
           settings: 'Settings'
         },
@@ -412,8 +413,8 @@ export const en = {
             titleEn: 'Title (English)',
             descriptionAr	: 'Description (Arabic)',
             descriptionEn	: 'Description (English',
-            locationAr	: 'location (Arabic)',
-            locationEn	: 'location (English)',
+            longitude	: 'location ',
+            latitude	: 'location ',
             imageurl: 'imageUrl',
             route: 'Route',
             bus: 'Bus',
@@ -447,8 +448,8 @@ export const en = {
               titleEn: 'Title (English)',
               descriptionAr	: 'Description (Arabic)',
               descriptionEn	: 'Description (English',
-              locationAr	: 'location (Arabic)',
-              locationEn	: 'location (English)',
+              latitude	: 'location (latitude)',
+              longitude	: 'location (longitude)',
               route: 'Route',
               bus: 'Bus',
               departureTime: 'Departure Time',
@@ -505,6 +506,8 @@ export const en = {
             to: 'To',
             distance: 'Distance (km)',
             activeTrips: 'Active Trips',
+            createdAt: 'Created At',
+            updatedAt: 'Updated At',
             actions: 'Actions'
           },
           delete: {
@@ -558,7 +561,8 @@ export const en = {
             nameEn: 'Name (English)',
             nameAr: 'Name (Arabic)',
             routes: 'Routes',
-            actions: 'Actions'
+            actions: 'Actions',
+            countryId: 'country id '
           },
           delete: {
             title: 'Delete City',
@@ -575,11 +579,13 @@ export const en = {
             },
             labels: {
               nameEn: 'Name (English)',
-              nameAr: 'Name (Arabic)'
+              nameAr: 'Name (Arabic)',
+              countryId: 'country Id'
             },
             placeholders: {
               nameEn: 'Jeddah',
-              nameAr: 'جدة'
+              nameAr: 'جدة',
+              countryId: 'بلد',
             },
             buttons: {
               create: 'Create City',
@@ -596,6 +602,59 @@ export const en = {
             success: {
               created: 'City created successfully',
               updated: 'City updated successfully'
+            }
+          }
+        },
+        countries: {
+          title: 'countries Management',
+          search: {
+            placeholder: 'Search countries...'
+          },
+          addButton: 'Add Countery',
+          columns: {
+            nameEn: 'Name (English)',
+            nameAr: 'Name (Arabic)',
+            actions: 'Actions',
+            code: 'Code'
+          },
+          delete: {
+            title: 'Delete Country',
+            message: 'Are you sure you want to delete this Country? This action cannot be undone.',
+            confirm: 'Delete',
+            cancel: 'Cancel',
+            success: 'City deleted successfully',
+            error: 'Failed to delete Country'
+          },
+          form: {
+            title: {
+              new: 'Add New Country',
+              edit: 'Edit Country'
+            },
+            labels: {
+              nameEn: 'Name (English)',
+              nameAr: 'Name (Arabic)',
+              code: 'code'
+            },
+            placeholders: {
+              nameEn: 'Jeddah',
+              nameAr: 'جدة',
+              code: 'بلد',
+            },
+            buttons: {
+              create: 'Create Country',
+              creating: 'Creating...',
+              update: 'Update Country',
+              updating: 'Updating...',
+              cancel: 'Cancel'
+            },
+            errors: {
+              createFailed: 'Failed to create city',
+              updateFailed: 'Failed to update city',
+              loadFailed: 'Failed to load cities'
+            },
+            success: {
+              created: 'Country created successfully',
+              updated: 'Country updated successfully'
             }
           }
         },
@@ -731,7 +790,8 @@ export const en = {
               fetchTrips: 'Internal server error trips',
               fetchSeats: 'Internal server error seats',
               blockSeats: 'Failed to block seats',
-              noSeatsSelected: 'Please select seats to block'
+              noSeatsSelected: 'Please select seats to block',
+              noSeatsFound: 'No seats found for this trip'
             },
             success: {
               seatsBlocked: 'Seats blocked successfully'

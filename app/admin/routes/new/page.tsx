@@ -34,7 +34,7 @@ export default function NewRoutePage() {
         }
       })
       const data = await response.json()
-      setCities(data)
+      setCities(data.data)
     } catch (error) {
       console.error('Error fetching cities:', error)
       toast.error(t.errors.loadFailed)

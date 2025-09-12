@@ -1,48 +1,73 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET(
-  request: Request,
+// GET - Fetch bus by ID
+export const GET = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const bus = await prisma.bus.findUnique({
-      where: {
-        id: params.id
+      where: { id: params.id },
+      include: {
+        trips: {
+          include: {
+            route: {
+              include: {
+                departureCity: true,
+                arrivalCity: true
+              }
+            }
+          }
+        }
       }
     })
 
     if (!bus) {
-      return NextResponse.json(
-        { error: 'Bus not found' },
-        { status: 404 }
-      )
+      return ApiResponseBuilder.notFound('Bus')
     }
 
-    return NextResponse.json(bus)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error bus' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      bus,
+      SuccessMessages.RETRIEVED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to fetch bus')
   }
-}
+})
 
-export async function PUT(
-  request: Request,
+// PUT - Update bus
+export const PUT = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const body = await request.json()
-    const { plateNumber, capacity, model, status } = body
-
-    // Validate required fields
-    if (!plateNumber || !capacity || !model || !status) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    
+    // Validate request data
+    const validationResult = validateRequest(body, {
+      plateNumber: { required: true, minLength: 5, maxLength: 20 },
+      capacity: { required: true, min: 1, max: 100 },
+      model: { required: true, minLength: 2, maxLength: 100 },
+      status: { required: true, enum: ['active', 'maintenance', 'inactive'] }
+    })
+    
+    if (!validationResult.isValid) {
+      const errorMessages: Record<string, string[]> = {}
+      validationResult.errors.forEach(error => {
+        if (!errorMessages[error.field]) {
+          errorMessages[error.field] = []
+        }
+        errorMessages[error.field].push(error.message)
+      })
+      
+      return ApiResponseBuilder.validationError(errorMessages, ErrorMessages.VALIDATION_FAILED)
     }
+
+    const { plateNumber, capacity, model, status } = body
 
     // Check if bus exists
     const existingBus = await prisma.bus.findUnique({
@@ -50,10 +75,7 @@ export async function PUT(
     })
 
     if (!existingBus) {
-      return NextResponse.json(
-        { error: 'Bus not found' },
-        { status: 404 }
-      )
+      return ApiResponseBuilder.notFound('Bus')
     }
 
     // Check if plate number is taken by another bus
@@ -65,12 +87,10 @@ export async function PUT(
     })
 
     if (busWithPlateNumber) {
-      return NextResponse.json(
-        { error: 'Plate number is already in use' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.conflict('Plate number is already in use')
     }
 
+    // Update bus
     const updatedBus = await prisma.bus.update({
       where: { id: params.id },
       data: {
@@ -81,20 +101,30 @@ export async function PUT(
       }
     })
 
-    return NextResponse.json(updatedBus)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to update bus' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      updatedBus,
+      SuccessMessages.UPDATED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to update bus')
   }
-}
+})
 
-export async function DELETE(
-  request: Request,
+// DELETE - Delete bus
+export const DELETE = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
+    // Check if bus exists
+    const existingBus = await prisma.bus.findUnique({
+      where: { id: params.id }
+    })
+
+    if (!existingBus) {
+      return ApiResponseBuilder.notFound('Bus')
+    }
+
     // Check if bus has any associated trips
     const busWithTrips = await prisma.bus.findFirst({
       where: {
@@ -106,23 +136,23 @@ export async function DELETE(
     })
 
     if (busWithTrips) {
-      return NextResponse.json(
-        { error: 'Cannot delete bus with associated trips' },
-        { status: 400 }
+      return ApiResponseBuilder.error(
+        'Cannot delete bus with associated trips',
+        StatusCodes.BAD_REQUEST,
+        'Bus has associated trips and cannot be deleted'
       )
     }
 
+    // Delete bus
     await prisma.bus.delete({
-      where: {
-        id: params.id
-      }
+      where: { id: params.id }
     })
 
-    return NextResponse.json({ message: 'Bus deleted successfully' })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to delete bus' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      null,
+      SuccessMessages.DELETED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to delete bus')
   }
-}
+})

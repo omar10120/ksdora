@@ -30,6 +30,7 @@ export default function EditTripPage({ params }: PageProps) {
   const [buses, setBuses] = useState<Bus[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const token = localStorage.getItem('token')
 
   
   
@@ -51,8 +52,8 @@ export default function EditTripPage({ params }: PageProps) {
     titleEn: '',
     descriptionAr	:'',
     descriptionEn	:'',
-    locationAr:'',
-    locationEn:'',
+    latitude:'',
+    longitude:'',
     lastBookingTime:'',
   })
 
@@ -64,7 +65,7 @@ export default function EditTripPage({ params }: PageProps) {
 
   const fetchTripDetails = async () => {
     try {
-      const token = localStorage.getItem('token')
+      
       const response = await fetch(`/api/admin/trips/${params.id}`, {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -73,24 +74,25 @@ export default function EditTripPage({ params }: PageProps) {
       if (!response.ok) throw new Error(t.errors.loadFailed)
       
       const data = await response.json()
+      
       setFormData({
-        routeId: data.routeId,
-        busId: data.busId,
-        departureTime: new Date(data.departureTime).toISOString().slice(0, 16),
-        arrivalTime: new Date(data.arrivalTime).toISOString().slice(0, 16),
-        lastBookingTime: new Date(data.lastBookingTime).toISOString().slice(0, 16),
-        price: data.price.toString(),
-        status: data.status,
-        titleAr: data.titleAr,
-        titleEn: data.titleEn,
-        descriptionAr: data.descriptionAr,
-        descriptionEn: data.descriptionEn,
-        locationAr: data.locationAr,
-        locationEn: data.locationEn
+        routeId: data.data.routeId,
+        busId: data.data.busId,
+        departureTime: new Date(data.data.departureTime).toISOString().slice(0, 16),
+        arrivalTime: new Date(data.data.arrivalTime).toISOString().slice(0, 16),
+        lastBookingTime: new Date(data.data.lastBookingTime).toISOString().slice(0, 16),
+        price: data.data.price.toString(),
+        status: data.data.status, 
+        titleAr: data.data.titleAr,
+        titleEn: data.data.titleEn,
+        descriptionAr: data.data.descriptionAr,
+        descriptionEn: data.data.descriptionEn,
+        latitude: data.data.latitude,
+        longitude: data.data.longitude
         
         
       })
-      setExistingImages(Array.isArray(data.imageUrls) ? data.imageUrls : JSON.parse(data.imageUrls || '[]'))
+      setExistingImages(Array.isArray(data.data.imageUrls) ? data.data.imageUrls : JSON.parse(data.data.imageUrls || '[]'))
 
     } catch (err: any) {
       toast.error(t.errors.loadFailed)
@@ -100,7 +102,7 @@ export default function EditTripPage({ params }: PageProps) {
 
   const fetchRoutes = async () => {
     try {
-      const token = localStorage.getItem('token')
+      
 
       const response = await fetch(`/api/admin/routes`, {
         headers: {
@@ -109,7 +111,10 @@ export default function EditTripPage({ params }: PageProps) {
       })
 
       const data = await response.json()
-      setRoutes(data)
+      setRoutes(data.data)
+      if (data.success && Array.isArray(data.data)) {
+        setRoutes(data.data)
+      }
     } catch (error) {
       console.error('Error fetching routes:', error)
     }
@@ -118,7 +123,7 @@ export default function EditTripPage({ params }: PageProps) {
   const fetchBuses = async () => {
     try {
       
-      const token = localStorage.getItem('token')
+      
 
       const response = await fetch(`/api/admin/buses`, {
         headers: {
@@ -126,7 +131,9 @@ export default function EditTripPage({ params }: PageProps) {
         }
       })
       const data = await response.json()
-      setBuses(data)
+      if (data.success && Array.isArray(data.data)) {
+        setBuses(data.data)
+      }
     } catch (error) {
       console.error('Error fetching buses:', error)
     }
@@ -138,7 +145,7 @@ export default function EditTripPage({ params }: PageProps) {
     setLoading(true);
   
     try {
-      const token = localStorage.getItem('token');
+      
       const form = new FormData();
   
       form.append('routeId', formData.routeId);
@@ -153,8 +160,8 @@ export default function EditTripPage({ params }: PageProps) {
       form.append('descriptionAr', formData.descriptionAr);
       form.append('descriptionEn', formData.descriptionEn);
       
-      form.append('locationAr', formData.locationAr);
-      form.append('locationEn', formData.locationEn);
+      form.append('latitude', formData.latitude);
+      form.append('longitude', formData.longitude);
       form.append('existingImages', JSON.stringify(existingImages));
   
       newImages.forEach((file) => {
@@ -355,25 +362,25 @@ export default function EditTripPage({ params }: PageProps) {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.locationAr}
+              {t.labels.latitude}
             </label>
             <input
               type="text"
               
-              value={formData.locationAr}
-              onChange={(e) => setFormData({ ...formData, locationAr: e.target.value })}
+              value={formData.latitude}
+              onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.locationEn}
+              {t.labels.longitude}
             </label>
             <input
               type="text"
               
-              value={formData.locationEn}
-              onChange={(e) => setFormData({ ...formData, locationEn: e.target.value })}
+              value={formData.longitude}
+              onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
@@ -397,6 +404,7 @@ export default function EditTripPage({ params }: PageProps) {
                   className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
               />
           </div>
+          
             {existingImages.length > 0 && (
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -411,6 +419,7 @@ export default function EditTripPage({ params }: PageProps) {
                       className="rounded-lg w-full h-32 object-cover border"
                     />
                   ))}
+                  
                 </div>
               </div>
             )}

@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { validateRequest } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
+import { NextApiRequest } from 'next'
 
-export async function GET(
-  req: Request,
+export const GET = asyncHandler(async (
+  req:  NextApiRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const city = await prisma.city.findUnique({
       where: { id: params.id },
@@ -23,33 +27,27 @@ export async function GET(
     })
 
     if (!city) {
-      return NextResponse.json(
-        { error: 'City not found' },
-        { status: 404 }
-      )
+      return ApiResponseBuilder.notFound('City')
     }
 
-    return NextResponse.json(city)
+    return ApiResponseBuilder.success(city, SuccessMessages.RETRIEVED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error city' },
-      { status: 500 }
-    )
+    throw ApiError.database('Failed to fetch city')
   }
-}
+})
 
-export async function PUT(
-  req: Request,
+export const PUT = asyncHandler(async (
+  req: NextApiRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
-    const body = await req.json()
+    const body = await req.body()
     const { name, nameAr } = body
 
     if (!name || !nameAr) {
-      return NextResponse.json(
-        { error: 'Name and Arabic name are required' },
-        { status: 400 }
+      return ApiResponseBuilder.validationError(
+        { name: ['Name and Arabic name are required'], nameAr: ['Name and Arabic name are required'] },
+        ErrorMessages.VALIDATION_FAILED
       )
     }
 
@@ -61,19 +59,16 @@ export async function PUT(
       }
     })
 
-    return NextResponse.json(updatedCity)
+    return ApiResponseBuilder.success(updatedCity, SuccessMessages.UPDATED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to update city' },
-      { status: 500 }
-    )
+    throw ApiError.database('Failed to update city')
   }
-}
+})
 
-export async function DELETE(
-  req: Request,
+export const DELETE = asyncHandler(async (
+  req: NextApiRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const cityWithRoutes = await prisma.city.findUnique({
       where: { id: params.id },
@@ -84,21 +79,22 @@ export async function DELETE(
     })
 
     if (cityWithRoutes?.departureRoutes.length || cityWithRoutes?.arrivalRoutes.length) {
-      return NextResponse.json(
-        { error: 'Cannot delete city with existing routes' },
-        { status: 400 }
+        return ApiResponseBuilder.error(
+          ApiError.validation('Cannot delete city with existing routes').message,
+          ApiError.validation('Cannot delete city with existing routes').statusCode
       )
+        
     }
 
     await prisma.city.delete({
       where: { id: params.id }
     })
 
-    return NextResponse.json({ message: 'City deleted successfully' })
+    return ApiResponseBuilder.success(null  , SuccessMessages.DELETED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to delete city' },
-      { status: 500 }
+    return ApiResponseBuilder.error(
+      ApiError.database('Failed to delete city').message,
+      ApiError.database('Failed to delete city').statusCode
     )
   }
-}
+})

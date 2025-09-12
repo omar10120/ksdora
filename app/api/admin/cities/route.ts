@@ -1,40 +1,61 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { validateRequest, ValidationSchemas } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET() {
+// GET - Fetch all cities
+export const GET = asyncHandler(async (request: NextRequest) => {
   try {
     const cities = await prisma.city.findMany({
       include: {
+        country: true,
         departureRoutes: true,
         arrivalRoutes: true
+      },
+      orderBy: {
+        name: 'asc'
       }
     })
-    return NextResponse.json(cities)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error cities' },
-      { status: 500 }
-    )
-  }
-}
 
-export async function POST(request: Request) {
+    return ApiResponseBuilder.success(
+      cities,
+      SuccessMessages.RETRIEVED,
+      200
+    )
+  } catch (error) {
+    throw ApiError.database('Failed to fetch cities')
+  }
+})
+
+// POST - Create new city
+export const POST = asyncHandler(async (request: NextRequest) => {
   try {
     const body = await request.json()
-    const { name, nameAr , countryId } = body
-
-    // Validate required fields
-    if (!name || !nameAr) {
-      return NextResponse.json(
-        { error: 'Name and Arabic name are required' },
-        { status: 400 }
-      )
+    
+    // Validate request data
+    const validationResult = validateRequest(body, ValidationSchemas.city)
+    if (!validationResult.isValid) {
+      const errorMessages: Record<string, string[]> = {}
+      validationResult.errors.forEach(error => {
+        if (!errorMessages[error.field]) {
+          errorMessages[error.field] = []
+        }
+        errorMessages[error.field].push(error.message)
+      })
+      
+      return ApiResponseBuilder.validationError(errorMessages, ErrorMessages.VALIDATION_FAILED)
     }
-    if (!countryId) {
-      return NextResponse.json(
-        { error: 'country Id are required' },
-        { status: 400 }
-      )
+
+    const { name, nameAr, countryId } = body
+
+    // Check if country exists
+    const country = await prisma.country.findUnique({
+      where: { id: countryId }
+    })
+
+    if (!country) {
+      return ApiResponseBuilder.notFound('Country', 'Country not found')
     }
 
     // Check if city already exists
@@ -42,32 +63,32 @@ export async function POST(request: Request) {
       where: {
         OR: [
           { name },
-          { nameAr },
-          { countryId}
+          { nameAr }
         ]
       }
     })
 
     if (existingCity) {
-      return NextResponse.json(
-        { error: 'City with this name already exists' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.conflict('City with this name already exists')
     }
 
+    // Create city
     const city = await prisma.city.create({
       data: {
         name,
         nameAr,
         countryId
+      },
+      include: {
+        country: true
       }
     })
 
-    return NextResponse.json(city)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to create city' },
-      { status: 500 }
+    return ApiResponseBuilder.created(
+      city,
+      SuccessMessages.CREATED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to create city')
   }
-}
+})

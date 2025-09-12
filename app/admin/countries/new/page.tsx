@@ -7,16 +7,16 @@ import { useLanguage } from '@/context/LanguageContext'
 export default function NewCityPage() {
   const router = useRouter()
   const { language, translations } = useLanguage()
-  const t = translations.dashboard.cities.form
+  const t = translations.dashboard.countries.form
   const [loading, setLoading] = useState(false)
   const [countries, setCountries] = useState<any[]>([])
-  // const [selectedCountry, setSelectedCountry] = useState("")
+  
   
   const token = localStorage.getItem('token')
   const [formData, setFormData] = useState({
     name: '',
     nameAr: '',
-    countryId: ''
+    code: ''
   })
   
   
@@ -51,7 +51,7 @@ export default function NewCityPage() {
 
     try {
       
-      const response = await fetch('/api/admin/cities', {
+      const response = await fetch('/api/admin/countries', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -70,7 +70,7 @@ export default function NewCityPage() {
 
       toast.success(t.success.created)
       setTimeout(() => {
-        router.push('/admin/cities')
+        router.push('/admin/countries')
       }, 2000)
 
     } catch (err: any) {
@@ -115,27 +115,21 @@ export default function NewCityPage() {
             dir="rtl"
           />
         </div>
-        
         <div>
-          <label htmlFor="country" className="block text-sm font-medium text-gray-700">
-            Country
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.code}
           </label>
-          <select
-            id="country"
-            name="countryId"
-            value={formData.countryId}
-            onChange={(e) => setFormData({ ...formData, countryId: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+          <input
+            type="text"
             required
-          >
-            <option value="">-- Select a Country --</option>
-            {countries.map((country) => (
-              <option key={country.id} value={country.id}>
-                {country.name} ({country.code})
-              </option>
-            ))}
-          </select>
+            value={formData.code}
+            onChange={(e) => setFormData({ ...formData, code: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder={t.placeholders.code}
+            dir="rtl"
+          />
         </div>
+      
 
 
         <div className="flex justify-end space-x-4">

@@ -12,30 +12,29 @@ import ConfirmDialogAdmin from '@/components/ConfirmDialogAdmin'
 import { useLanguage } from '@/context/LanguageContext'
 
 
-interface City {
+interface country {
   id: string
   name: string
   nameAr: string
-  countryId: string
-  departureRoutes: any[]
-  arrivalRoutes: any[]
+  code: string
+
 }
 
-export default function CitiesPage() {
+export default function CountriesPage() {
   const router = useRouter()
   const { language, translations } = useLanguage()
-  const t = translations.dashboard.cities
-  const [cities, setCities] = useState<City[]>([])
+  const t = translations.dashboard.countries
+  const [Countries, setCountries] = useState<country[]>([])
   const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState('')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
-  const [cityToDelete, setCityToDelete] = useState<string | null>(null)
+  const [countryToDelete, setcountryToDelete] = useState<string | null>(null)
   
 
-  const fetchCities = async () => {
+  const fetchCountries = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch('/api/admin/cities', {
+      const response = await fetch('/api/admin/countries', {
         
         headers: {
           'Authorization': `Bearer ${token}`
@@ -44,15 +43,15 @@ export default function CitiesPage() {
       const result = await response.json()
       
       if (Array.isArray(result.data)) {
-        setCities(result.data)
+        setCountries(result.data)
       } else {
-        console.error('Invalid cities response:', result)
-        setCities([])
+        console.error('Invalid Countries response:', result)
+        setCountries([])
       }
     } catch (error) {
-      console.error('Error fetching cities:', error)
+      console.error('Error fetching Countries:', error)
       toast.error(t.form.errors.loadFailed)
-      setCities([])
+      setCountries([])
     } finally {
       setLoading(false)
     }
@@ -63,7 +62,7 @@ export default function CitiesPage() {
 
     const initializeFetch = async () => {
       if (isSubscribed) {
-        await fetchCities()
+        await fetchCountries()
       }
     }
 
@@ -74,17 +73,17 @@ export default function CitiesPage() {
     }
   }, [])
 
-  const handleDeleteClick = (cityId: string) => {
-    setCityToDelete(cityId)
+  const handleDeleteClick = (countryId: string) => {
+    setcountryToDelete(countryId)
     setIsDeleteDialogOpen(true)
   }
 
-  const handleDeleteCity = async () => {
-    if (!cityToDelete) return
+  const handleDeletecountry = async () => {
+    if (!countryToDelete) return
 
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/admin/cities/${cityToDelete}`, {
+      const response = await fetch(`/api/admin/countries/${countryToDelete}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -94,22 +93,22 @@ export default function CitiesPage() {
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || t.delete.error)
+        throw new Error(result.data.error || t.delete.error)
       }
 
-      setCities(cities.filter(city => city.id !== cityToDelete))
+      setCountries(Countries.filter(country => country.id !== countryToDelete))
       toast.success(t.delete.success)
     } catch (error: any) {
       toast.error(error.message || t.delete.error)
     } finally {
-      setCityToDelete(null)
+      setcountryToDelete(null)
       setIsDeleteDialogOpen(false)
     }
   }
 
-  const filteredCities = cities.filter(city => 
-    city.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    city.nameAr.includes(searchTerm)
+  const filteredCountries = Countries.filter(country => 
+    country.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    country.nameAr.includes(searchTerm)
   )
 
   return (
@@ -118,7 +117,7 @@ export default function CitiesPage() {
       <ConfirmDialogAdmin
         isOpen={isDeleteDialogOpen}
         onClose={() => setIsDeleteDialogOpen(false)}
-        onConfirm={handleDeleteCity}
+        onConfirm={handleDeletecountry}
         title={t.delete.title}
         message={t.delete.message}
         confirmText={t.delete.confirm}
@@ -139,7 +138,7 @@ export default function CitiesPage() {
             <MagnifyingGlassIcon className="h-5 w-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
           </div>
           <button
-            onClick={() => router.push('/admin/cities/new')}
+            onClick={() => router.push('/admin/countries/new')}
             className="flex items-center space-x-2 px-4 max-sm:px-2 py-2 max-sm:py-1 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
           >
             <PlusIcon className="h-5 w-5" />
@@ -159,10 +158,7 @@ export default function CitiesPage() {
                 {t.columns.nameAr}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.countryId}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.routes}
+                {t.columns.code}
               </th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.actions}
@@ -170,29 +166,28 @@ export default function CitiesPage() {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {filteredCities.map((city) => (
-              <tr key={city.id} className="hover:bg-gray-50">
+            {filteredCountries.map((country) => (
+              <tr key={country.id} className="hover:bg-gray-50">
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {city.name}
+                  {country.name}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" dir="rtl">
-                  {city.nameAr}
+                  {country.nameAr}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900" dir="rtl">
-                  {city.countryId}
+                  {country.code}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {city.departureRoutes.length + city.arrivalRoutes.length}
-                </td>
+                
+             
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                   <button
-                    onClick={() => router.push(`/admin/cities/${city.id}/edit`)}
+                    onClick={() => router.push(`/admin/countries/${country.id}/edit`)}
                     className="text-indigo-600 hover:text-indigo-900 cursor-pointer"
                   >
                     <PencilIcon className="h-5 w-5" />
                   </button>
                   <button
-                    onClick={() => handleDeleteClick(city.id)}
+                    onClick={() => handleDeleteClick(country.id)}
                     className="text-red-600 hover:text-red-900 ml-4 cursor-pointer"
                   >
                     <TrashIcon className="h-5 w-5" />

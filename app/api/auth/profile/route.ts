@@ -3,13 +3,16 @@
 import { NextResponse } from 'next/server'
 import jwt from 'jsonwebtoken'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET(req: Request) {
+export const GET = asyncHandler(async (req: Request) => {
   try {
     const authHeader = req.headers.get('authorization')
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return NextResponse.json({ error: 'Authorization required' }, { status: 401 })
+        return ApiResponseBuilder.error('Authorization required', StatusCodes.UNAUTHORIZED)
     }
 
     const token = authHeader.split(' ')[1]
@@ -32,12 +35,12 @@ export async function GET(req: Request) {
     })
 
     if (!user) {
-      return NextResponse.json({ error: 'User not found' }, { status: 404 })
+      return ApiResponseBuilder.error('User not found', StatusCodes.NOT_FOUND)
     }
 
-    return NextResponse.json({ user })
+    return ApiResponseBuilder.success(user)
   } catch (error) {
     console.error('Profile error:', error)
-    return NextResponse.json({ error: 'Invalid or expired token' }, { status: 401 })
+    return ApiResponseBuilder.error('Invalid or expired token', StatusCodes.UNAUTHORIZED)
   }
-}
+})

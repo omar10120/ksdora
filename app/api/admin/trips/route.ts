@@ -1,80 +1,175 @@
-import { NextRequest, NextResponse } from 'next/server';
-import prisma from '@/lib/prisma';
-import path from 'path';
-import fs from 'fs/promises';
-
-
-import { v2 as cloudinary } from 'cloudinary';
-// import type { File } from 'formdata-node';
-
+import { NextRequest } from 'next/server'
+import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { validateRequest } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
+import { v2 as cloudinary } from 'cloudinary'
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
   api_key: process.env.CLOUDINARY_API_KEY!,
   api_secret: process.env.CLOUDINARY_API_SECRET!,
-});
+})
 
-export async function GET() {
+// GET - Fetch all trips with pagination and filters
+export const GET = asyncHandler(async (request: NextRequest) => {
   try {
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const status = searchParams.get('status')
+    const routeId = searchParams.get('routeId')
+    const busId = searchParams.get('busId')
+    const departureDate = searchParams.get('departureDate')
+
+    // Calculate pagination
+    const skip = (page - 1) * limit
+    
+    // Build where clause
+    const where: any = {}
+    if (status) {
+      where.status = status
+    }
+    if (routeId) {
+      where.routeId = routeId
+    }
+    if (busId) {
+      where.busId = busId
+    }
+    if (departureDate) {
+      const startDate = new Date(departureDate)
+      const endDate = new Date(startDate)
+      endDate.setDate(endDate.getDate() + 1)
+      where.departureTime = {
+        gte: startDate,
+        lt: endDate
+      }
+    }
+
+    // Get total count
+    const total = await prisma.trip.count({ where })
+    
+    // Get trips
     const trips = await prisma.trip.findMany({
+      where,
       orderBy: {
         departureTime: 'desc'
       },
       include: {
         route: {
           include: {
-            departureCity: true,
-            arrivalCity: true
+            departureCity: {
+              include: { country: true }
+            },
+            arrivalCity: {
+              include: { country: true }
+            }
           }
         },
-        bus: true
+        bus: {
+          select: {
+            id: true,
+            plateNumber: true,
+            model: true,
+            capacity: true,
+            status: true
+          }
+        },
+        seats: {
+          select: {
+            id: true,
+            seatNumber: true,
+            status: true
+          }
+        },
+        bookings: {
+          select: {
+            id: true,
+            status: true,
+            totalPrice: true
+          }
+        },
+
+      },
+      skip,
+      take: limit
+    })
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit)
+    const pagination = {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+
+    return ApiResponseBuilder.paginated(trips, pagination, SuccessMessages.RETRIEVED)
+  } catch (error) {
+    throw ApiError.database('Failed to fetch trips')
+  }
+})
+
+// POST - Create new trip
+export const POST = asyncHandler(async (request: NextRequest) => {
+  try {
+    const formData = await request.formData()
+
+    const routeId = formData.get('routeId') as string
+    const busId = formData.get('busId') as string
+    const departureTime = formData.get('departureTime') as string
+    const arrivalTime = formData.get('arrivalTime') as string
+    const lastBookingTime = formData.get('lastBookingTime') as string
+    const price = parseFloat(formData.get('price') as string)
+    const titleAr = formData.get('titleAr') as string
+    const titleEn = formData.get('titleEn') as string
+    const descriptionAr = formData.get('descriptionAr') as string
+    const descriptionEn = formData.get('descriptionEn') as string
+    const latitude = formData.get('latitude') as string
+    const longitude = formData.get('longitude') as string
+    const files = formData.getAll('images') as File[]
+    
+    // Validate required fields
+    if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
+      return ApiResponseBuilder.validationError(
+        { general: ['Missing required fields'] },
+        ErrorMessages.VALIDATION_FAILED
+      )
+    }
+
+    // Validate time logic
+    if (lastBookingTime && (lastBookingTime > departureTime || lastBookingTime > arrivalTime)) {
+      return ApiResponseBuilder.validationError(
+        { lastBookingTime: ['Last booking time must be before departure time and arrival time'] },
+        ErrorMessages.VALIDATION_FAILED
+      )
+    }
+
+    // Check if bus exists and is active
+    const bus = await prisma.bus.findFirst({
+      where: { id: busId, status: 'active' }
+    })
+
+    if (!bus) {
+      return ApiResponseBuilder.notFound('Active bus')
+    }
+
+    // Check if route exists
+    const route = await prisma.route.findUnique({
+      where: { id: routeId },
+      include: {
+        departureCity: { include: { country: true } },
+        arrivalCity: { include: { country: true } }
       }
     })
 
-    return NextResponse.json(trips)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error trips' },
-      { status: 500 }
-    )
-  }
-}
-
-export async function POST(req: NextRequest) {
-  try {
-    const formData = await req.formData();
-
-    const routeId = formData.get('routeId') as string;
-    const busId = formData.get('busId') as string;
-    const departureTime = formData.get('departureTime') as string;
-    const arrivalTime = formData.get('arrivalTime') as string;
-    const lastBookingTime = formData.get('lastBookingTime') as string;
-    const price = parseFloat(formData.get('price') as string);
-    const titleAr = formData.get('titleAr') as string;
-    const titleEn = formData.get('titleEn') as string;
-    const descriptionAr = formData.get('descriptionAr') as string;
-    const descriptionEn = formData.get('descriptionEn') as string;
-    const locationAr = formData.get('locationAr') as string;
-    const locationEn = formData.get('locationEn') as string;
-    const files = formData.getAll('images') as File[];
-    
-    if (!routeId || !busId || !departureTime || !arrivalTime || !price )  {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-    }
-    if( lastBookingTime > departureTime || lastBookingTime > arrivalTime){
-      return NextResponse.json(
-        { error: 'Last booking time must be before departure time and arrival time' },
-        { status: 400 }
-      )
-    }
-    const bus = await prisma.bus.findFirst({
-      where: { id: busId, status: 'active' },
-    });
-
-    if (!bus) {
-      return NextResponse.json({ error: 'Bus is not available or not active' }, { status: 400 });
+    if (!route) {
+      return ApiResponseBuilder.notFound('Route')
     }
 
+    // Check bus availability for time range
     const existingTrip = await prisma.trip.findFirst({
       where: {
         busId,
@@ -82,44 +177,47 @@ export async function POST(req: NextRequest) {
           {
             AND: [
               { departureTime: { lte: new Date(departureTime) } },
-              { arrivalTime: { gte: new Date(departureTime) } },
-            ],
+              { arrivalTime: { gte: new Date(departureTime) } }
+            ]
           },
           {
             AND: [
               { departureTime: { lte: new Date(arrivalTime) } },
-              { arrivalTime: { gte: new Date(arrivalTime) } },
-            ],
-          },
-        ],
-      },
-    });
+              { arrivalTime: { gte: new Date(arrivalTime) } }
+            ]
+          }
+        ]
+      }
+    })
 
     if (existingTrip) {
-      return NextResponse.json({ error: 'Bus is not available for this period' }, { status: 400 });
+      return ApiResponseBuilder.conflict('Bus is not available for this period')
     }
 
-    const imageUrls: string[] = [];
-
+    // Upload images to Cloudinary
+    const imageUrls: string[] = []
     for (const file of files) {
-      const buffer = Buffer.from(await file.arrayBuffer());
-      const base64 = buffer.toString('base64');
-      const mimeType = file.type;
-      const dataURI = `data:${mimeType};base64,${base64}`;
+      const buffer = Buffer.from(await file.arrayBuffer())
+      const base64 = buffer.toString('base64')
+      const mimeType = file.type
+      const dataURI = `data:${mimeType};base64,${base64}`
 
       const uploadResult = await cloudinary.uploader.upload(dataURI, {
-        folder: 'trips',
-      });
+        folder: 'trips'
+      })
 
-      imageUrls.push(uploadResult.secure_url);
+      imageUrls.push(uploadResult.secure_url)
     }
 
+    // Create trip with seats in transaction
     const trip = await prisma.$transaction(async (tx) => {
+      // Update bus status
       await tx.bus.update({
         where: { id: busId },
-        data: { status: 'passenger_filling' },
-      });
+        data: { status: 'passenger_filling' }
+      })
 
+      // Create trip with seats
       return tx.trip.create({
         data: {
           routeId,
@@ -128,35 +226,56 @@ export async function POST(req: NextRequest) {
           titleEn,
           descriptionEn,
           descriptionAr,
-          locationAr,
-          locationEn,
+          latitude,
+          longitude,
           departureTime: new Date(departureTime),
           arrivalTime: new Date(arrivalTime),
-          lastBookingTime: new Date(lastBookingTime),
+          lastBookingTime: lastBookingTime ? new Date(lastBookingTime) : new Date(departureTime),
           price,
           status: 'scheduled',
           imageUrls: JSON.stringify(imageUrls),
           seats: {
             create: Array.from({ length: bus.capacity }, (_, i) => ({
               seatNumber: `${String.fromCharCode(65 + Math.floor(i / 4))}${(i % 4) + 1}`,
-              status: 'available',
-            })),
-          },
+              status: 'available'
+            }))
+          }
         },
         include: {
-          route: { include: { departureCity: true, arrivalCity: true } },
-          bus: true,
-          seats: true,
-        },
-      });
-    });
+          route: {
+            include: {
+              departureCity: { include: { country: true } },
+              arrivalCity: { include: { country: true } }
+            }
+          },
+          bus: {
+            select: {
+              id: true,
+              plateNumber: true,
+              model: true,
+              capacity: true,
+              status: true
+            }
+          },
+          seats: {
+            select: {
+              id: true,
+              seatNumber: true,
+              status: true
+            }
+          }
+        }
+      })
+    })
 
-    return NextResponse.json(trip);
+    return ApiResponseBuilder.created(
+      trip,
+      SuccessMessages.CREATED
+    )
   } catch (error) {
-    console.error('Create trip error:', error);
-    return NextResponse.json({ error: 'Failed to create trip' }, { status: 500 });
+    throw ApiError.database('Failed to create trip')
   }
-}
+})
 
 // export async function POST(req: NextRequest) {
 //   try {

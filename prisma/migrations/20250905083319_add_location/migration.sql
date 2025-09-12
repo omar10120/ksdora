@@ -74,8 +74,8 @@ CREATE TABLE `trips` (
     `titleEn` VARCHAR(191) NULL,
     `descriptionAr` VARCHAR(191) NULL,
     `descriptionEn` VARCHAR(191) NULL,
-    `locationAr` VARCHAR(191) NULL,
-    `locationEn` VARCHAR(191) NULL,
+    `latitude` DECIMAL(10, 7) NOT NULL,
+    `longitude` DECIMAL(10, 7) NOT NULL,
     `imageUrls` VARCHAR(191) NULL,
     `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
     `updated_at` DATETIME(3) NOT NULL,
@@ -198,6 +198,20 @@ CREATE TABLE `feedbacks` (
     PRIMARY KEY (`id`)
 ) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 
+-- CreateTable
+CREATE TABLE `ads` (
+    `id` VARCHAR(36) NOT NULL,
+    `image_url` VARCHAR(255) NOT NULL,
+    `url` VARCHAR(255) NOT NULL,
+    `description` TEXT NULL,
+    `trip_id` VARCHAR(36) NULL,
+    `created_at` DATETIME(3) NOT NULL DEFAULT CURRENT_TIMESTAMP(3),
+    `updated_at` DATETIME(3) NOT NULL,
+
+    INDEX `trip_id`(`trip_id`),
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
 -- AddForeignKey
 ALTER TABLE `cities` ADD CONSTRAINT `cities_country_id_fkey` FOREIGN KEY (`country_id`) REFERENCES `countries`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
 
@@ -254,3 +268,6 @@ ALTER TABLE `feedbacks` ADD CONSTRAINT `feedbacks_ibfk_2` FOREIGN KEY (`user_id`
 
 -- AddForeignKey
 ALTER TABLE `feedbacks` ADD CONSTRAINT `feedbacks_ibfk_3` FOREIGN KEY (`trip_id`) REFERENCES `trips`(`id`) ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+-- AddForeignKey
+ALTER TABLE `ads` ADD CONSTRAINT `ads_ibfk_1` FOREIGN KEY (`trip_id`) REFERENCES `trips`(`id`) ON DELETE SET NULL ON UPDATE RESTRICT;

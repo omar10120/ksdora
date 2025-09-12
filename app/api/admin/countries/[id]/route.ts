@@ -4,43 +4,31 @@ import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from 
 import { validateRequest, ValidationSchemas } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-// GET - Fetch city by ID
+// GET - Fetch country by ID
 export const GET = asyncHandler(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
   try {
-    const city = await prisma.city.findUnique({
+    const country = await prisma.country.findUnique({
       where: { id: params.id },
-      include: {
-        country: true,
-        departureRoutes: {
-          include: {
-            arrivalCity: true
-          }
-        },
-        arrivalRoutes: {
-          include: {
-            departureCity: true
-          }
-        }
-      }
+    
     })
 
-    if (!city) {
-      return ApiResponseBuilder.notFound('City')
+    if (!country) {
+      return ApiResponseBuilder.notFound('country')
     }
 
     return ApiResponseBuilder.success(
-      city,
+      country,
       SuccessMessages.RETRIEVED
     )
   } catch (error) {
-    throw ApiError.database('Failed to fetch city')
+    throw ApiError.database('Failed to fetch country')
   }
 })
 
-// PUT - Update city
+// PUT - Update country
 export const PUT = asyncHandler(async (
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -49,7 +37,7 @@ export const PUT = asyncHandler(async (
     const body = await request.json()
     
     // Validate request data
-    const validationResult = validateRequest(body, ValidationSchemas.city)
+    const validationResult = validateRequest(body, ValidationSchemas.country)
     
     if (!validationResult.isValid) {
       const errorMessages: Record<string, string[]> = {}
@@ -63,19 +51,19 @@ export const PUT = asyncHandler(async (
       return ApiResponseBuilder.validationError(errorMessages, ErrorMessages.VALIDATION_FAILED)
     }
 
-    const { name, nameAr ,countryId} = body
+    const { name, nameAr ,code} = body
 
-    // Check if city exists
-    const existingCity = await prisma.city.findUnique({
+    // Check if country exists
+    const existingcountry = await prisma.country.findUnique({
       where: { id: params.id }
     })
 
-    if (!existingCity) {
-      return ApiResponseBuilder.notFound('City')
+    if (!existingcountry) {
+      return ApiResponseBuilder.notFound('country')
     }
 
     // Check if updated name would create a duplicate
-    const duplicateCity = await prisma.city.findFirst({
+    const duplicatecountry = await prisma.country.findFirst({
       where: {
         OR: [
           { name },
@@ -85,68 +73,47 @@ export const PUT = asyncHandler(async (
       }
     })
 
-    if (duplicateCity) {
-      return ApiResponseBuilder.conflict('City with this name already exists')
+    if (duplicatecountry) {
+      return ApiResponseBuilder.conflict('country with this name already exists')
     }
 
-    // Update city
-    const updatedCity = await prisma.city.update({
+    // Update country
+    const updatedcountry = await prisma.country.update({
       where: { id: params.id },
       data: {
         name,
         nameAr,
-        countryId
-      },
-      include: {
-        country: true
+        code
       }
     })
 
     return ApiResponseBuilder.success(
-      updatedCity,
+      updatedcountry,
       SuccessMessages.UPDATED
     )
   } catch (error) {
-    throw ApiError.database('Failed to update city')
+    throw ApiError.database('Failed to update country')
   }
 })
 
-// DELETE - Delete city
+// DELETE - Delete country
 export const DELETE = asyncHandler(async (
   request: NextRequest,
   { params }: { params: { id: string } }
 ) => {
   try {
-    // Check if city exists
-    const existingCity = await prisma.city.findUnique({
+    // Check if country exists
+    const existingcountry = await prisma.country.findUnique({
       where: { id: params.id }
     })
 
-    if (!existingCity) {
-      return ApiResponseBuilder.notFound('City')
+    if (!existingcountry) {
+      return ApiResponseBuilder.notFound('country')
     }
 
-    // Check if city has any routes
-    const cityWithRoutes = await prisma.city.findFirst({
-      where: {
-        id: params.id,
-        OR: [
-          { departureRoutes: { some: {} } },
-          { arrivalRoutes: { some: {} } }
-        ]
-      }
-    })
 
-    if (cityWithRoutes) {
-      return ApiResponseBuilder.error(
-        'Cannot delete city with associated routes',
-        StatusCodes.BAD_REQUEST,
-        'City has associated routes and cannot be deleted'
-      )
-    }
-
-    // Delete city
-    await prisma.city.delete({
+    // Delete country
+    await prisma.country.delete({
       where: { id: params.id }
     })
 
@@ -155,6 +122,6 @@ export const DELETE = asyncHandler(async (
       SuccessMessages.DELETED
     )
   } catch (error) {
-    throw ApiError.database('Failed to delete city')
+    throw ApiError.database('Failed to delete country'  )
   }
 })

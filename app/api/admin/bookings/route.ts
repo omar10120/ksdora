@@ -1,12 +1,39 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
-import { headers } from 'next/headers'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET() {
-
+// GET - Fetch all bookings with pagination and filters
+export const GET = asyncHandler(async (request: NextRequest) => {
   try {
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const status = searchParams.get('status')
+    const userId = searchParams.get('userId')
+    const tripId = searchParams.get('tripId')
+
+    // Calculate pagination
+    const skip = (page - 1) * limit
     
+    // Build where clause
+    const where: any = {}
+    if (status) {
+      where.status = status
+    }
+    if (userId) {
+      where.userId = userId
+    }
+    if (tripId) {
+      where.tripId = tripId
+    }
+
+    // Get total count
+    const total = await prisma.booking.count({ where })
+    
+    // Get bookings
     const bookings = await prisma.booking.findMany({
+      where,
       orderBy: {
         bookingDate: 'desc'
       },
@@ -18,6 +45,12 @@ export async function GET() {
                 departureCity: true,
                 arrivalCity: true
               }
+            },
+            bus: {
+              select: {
+                plateNumber: true,
+                model: true
+              }
             }
           }
         },
@@ -28,19 +61,37 @@ export async function GET() {
         },
         user: {
           select: {
+            id: true,
             name: true,
             email: true,
             phone: true
           }
-        }
-      }
+        },
+        bill: {
+          include: {
+            payments: true
+          }
+        },
+        ratings: true,
+        feedbacks: true
+      },
+      skip,
+      take: limit
     })
 
-    return NextResponse.json(bookings)
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit)
+    const pagination = {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
+    }
+
+    return ApiResponseBuilder.paginated(bookings, pagination, SuccessMessages.RETRIEVED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error bookings' },
-      { status: 500 }
-    )
+    throw ApiError.database('Failed to fetch bookings')
   }
-}
+})

@@ -43,8 +43,8 @@ export default function NewTripPage() {
     descriptionAr	:'',
     descriptionEn	:'',
     lastBookingTime	:'',
-    locationAr	:'',
-    locationEn	:'',
+    longitude	:'',
+    latitude	:'',
 
   })
 
@@ -62,9 +62,11 @@ export default function NewTripPage() {
         }
       })
       const data = await response.json()
-      setRoutes(data)
+      setRoutes(data.data)
     } catch (error) {
       console.error('Error fetching routes:', error)
+      toast.error(t.errors.loadFailed)
+      setRoutes([])
     }
   }
 
@@ -79,10 +81,12 @@ export default function NewTripPage() {
       })
       const data = await response.json()
       // Filter to only show active buses
-      const activeBuses = data.filter((bus: Bus) => bus.status === 'active')
+      const activeBuses = data.data.filter((bus: Bus) => bus.status === 'active')
       setBuses(activeBuses)
     } catch (error) {
-      console.error('Error fetching buses:', error)
+      console.error('Error fetching buses:', error);
+      toast.error(t.errors.loadFailed)
+      setBuses([])
     }
   }
 
@@ -196,25 +200,25 @@ export default function NewTripPage() {
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.locationAr}
+              {t.labels.longitude}
             </label>
             <input
               type='text'
               disabled={loadingProgress}
-              value={formData.locationEn}
-              onChange={(e) => setFormData({ ...formData, locationEn: e.target.value })}
+              value={formData.latitude}
+              onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
         <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              {t.labels.locationEn}
+              {t.labels.latitude}
             </label>
             <input
               type='text'
               disabled={loadingProgress}
-              value={formData.locationAr}
-              onChange={(e) => setFormData({ ...formData, locationAr: e.target.value })}
+              value={formData.longitude}
+              onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
             />
         </div>
@@ -313,6 +317,33 @@ export default function NewTripPage() {
             step="0.01"
             value={formData.price}
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.longitude} (longitude)
+          </label>
+          <input
+            disabled={loadingProgress}
+            type="number"
+            required
+            value={formData.longitude}
+            onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.latitude}
+            (latitude)
+          </label>
+          <input
+            disabled={loadingProgress}
+            type="number"
+            required
+            value={formData.latitude}
+            onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>

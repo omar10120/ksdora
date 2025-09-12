@@ -30,6 +30,7 @@ const getMenuItems = (t: any) => [
   { href: '/admin/buses', icon: TruckIcon, label: t.buses },  
   { href: '/admin/routes', icon: MapIcon, label: t.routes }, 
   { href: '/admin/cities', icon: BuildingOfficeIcon, label: t.cities }, 
+  { href: '/admin/countries', icon: BuildingOfficeIcon, label: t.countries }, 
   { href: '/admin/reports', icon: ChartBarIcon, label: t.reports },
   { href: '/admin/settings', icon: CogIcon, label: t.settings },
   // { href: '', icon: CogIcon, label: t.logout },

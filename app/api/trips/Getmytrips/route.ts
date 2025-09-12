@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse , NextRequest } from 'next/server';
 import { headers } from 'next/headers';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
-export async function GET(req: Request) {
+export async function GET(req: NextRequest) {
   try {
     const headersList = headers();
     const authHeader = headersList.get('Authorization');

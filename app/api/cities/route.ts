@@ -1,7 +1,10 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET(req: Request) {
+export const GET = asyncHandler(async (req: NextRequest) => {
     try {
       const { searchParams } = new URL(req.url)
       const search = searchParams.get('search')
@@ -35,24 +38,21 @@ export async function GET(req: Request) {
         }
       })
   
-      return NextResponse.json(cities)
+      return ApiResponseBuilder.success(cities, SuccessMessages.RETRIEVED)
     } catch (error) {
-      return NextResponse.json(
-        { error: 'Internal server error cities' },
-        { status: 500 }
-      )
+      throw ApiError.database(ErrorMessages.DATABASE_ERROR)
     }
-  }
+  })
 
-export async function POST(req: Request) {
+export const POST = asyncHandler(async (req: NextRequest) => {
   try {
     const body = await req.json()
-    const { name, nameAr } = body
+    const { name, nameAr ,countryId} = body
 
-    if (!name || !nameAr) {
-      return NextResponse.json(
-        { error: 'Name and Arabic name are required' },
-        { status: 400 }
+    if (!name || !nameAr || !countryId) {
+      return ApiResponseBuilder.validationError(
+        { name: ['Name and Arabic name are required'], nameAr: ['Name and Arabic name are required'], countryId: ['Name and Arabic name are required'] },
+        ErrorMessages.VALIDATION_FAILED
       )
     }
 
@@ -74,24 +74,19 @@ export async function POST(req: Request) {
       })
 
     if (existingCity) {
-      return NextResponse.json(
-        { error: 'City already exists' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.conflict('City already exists')
     }
 
     const city = await prisma.city.create({
       data: {
         name,
-        nameAr
+        nameAr,
+        countryId
       }
     })
 
-    return NextResponse.json(city)
+    return ApiResponseBuilder.success(city, SuccessMessages.CREATED)
   } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to create city' },
-      { status: 500 }
-    )
+    throw ApiError.database('Failed to create city')
   }
-}
+})

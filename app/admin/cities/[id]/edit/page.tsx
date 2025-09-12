@@ -14,27 +14,32 @@ export default function EditCityPage({ params }: PageProps) {
   const router = useRouter()
   const { language, translations } = useLanguage()
   const t = translations.dashboard.cities.form
+
   const [loading, setLoading] = useState(false)
+  const [countries, setCountries] = useState<any[]>([])
   const [formData, setFormData] = useState({
     name: '',
-    nameAr: ''
+    nameAr: '',
+    countryId: ''
   })
 
+  // Fetch city by ID
   const fetchCity = async () => {
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/admin/cities/${params.id}`,{
-        headers:{
+      const response = await fetch(`/api/admin/cities/${params.id}`, {
+        headers: {
           'Authorization': `Bearer ${token}`
         }
       })
-    
+
       if (!response.ok) throw new Error(t.errors.loadFailed)
-      
+
       const data = await response.json()
       setFormData({
-        name: data.name,
-        nameAr: data.nameAr
+        name: data.data.name,
+        nameAr: data.data.nameAr,
+        countryId: data.data.countryId
       })
     } catch (err: any) {
       toast.error(t.errors.loadFailed)
@@ -42,6 +47,28 @@ export default function EditCityPage({ params }: PageProps) {
     }
   }
 
+  // Fetch countries for dropdown
+  const fetchCountries = async () => {
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/admin/countries`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      })
+
+      if (!response.ok) throw new Error("Failed to load countries")
+
+      const data = await response.json()
+      if (data.success && Array.isArray(data.data)) {
+        setCountries(data.data)
+      }
+    } catch (err) {
+      console.error("Failed to fetch countries", err)
+    }
+  }
+
+  // Handle form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -58,16 +85,12 @@ export default function EditCityPage({ params }: PageProps) {
       })
 
       const data = await response.json()
-
-      if (!response.ok) {
-        throw new Error(data.error || t.errors.updateFailed)
-      }
+      if (!response.ok) throw new Error(data.error || t.errors.updateFailed)
 
       toast.success(t.success.updated)
       setTimeout(() => {
         router.push('/admin/cities')
       }, 2000)
-
     } catch (err: any) {
       toast.error(err.message || t.errors.updateFailed)
     } finally {
@@ -76,6 +99,7 @@ export default function EditCityPage({ params }: PageProps) {
   }
 
   useEffect(() => {
+    fetchCountries()
     fetchCity()
   }, [])
 
@@ -85,6 +109,7 @@ export default function EditCityPage({ params }: PageProps) {
       <h1 className="text-2xl font-semibold text-gray-800 max-sm:w-full mb-6">{t.title.edit}</h1>
 
       <form onSubmit={handleSubmit} className="space-y-6 bg-white p-6 rounded-lg shadow">
+        {/* English Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t.labels.nameEn}
@@ -100,6 +125,7 @@ export default function EditCityPage({ params }: PageProps) {
           />
         </div>
 
+        {/* Arabic Name */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t.labels.nameAr}
@@ -115,6 +141,29 @@ export default function EditCityPage({ params }: PageProps) {
           />
         </div>
 
+        {/* Country Select */}
+        <div>
+          <label htmlFor="country" className="block text-sm font-medium text-gray-700">
+            Country
+          </label>
+          <select
+            id="country"
+            name="countryId"
+            value={formData.countryId}
+            onChange={(e) => setFormData({ ...formData, countryId: e.target.value })}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            required
+          >
+            <option value="">-- Select a Country --</option>
+            {countries.map((country) => (
+              <option key={country.id} value={country.id}>
+                {country.name} ({country.code})
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Buttons */}
         <div className="flex justify-end space-x-4">
           <button
             type="button"

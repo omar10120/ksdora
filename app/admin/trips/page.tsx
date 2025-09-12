@@ -15,8 +15,8 @@ interface Trip {
   titleEn:string,
   descriptionAr:string,
   descriptionEn:string,
-  locationAr:string,
-  locationEn:string,
+  latitude:string,
+  longitude:string,
   imageUrls:string,
   id: string
   routeId: string
@@ -60,7 +60,7 @@ export default function TripsPage() {
         }
       })
       const data = await response.json()
-      setTrips(data)
+      setTrips(data.data)
       console.log(data)
     } catch (error) {
       console.error('Error fetching trips:', error)
@@ -192,10 +192,10 @@ export default function TripsPage() {
                 {t.columns.descriptionEn}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.locationAr}
+                {t.columns.latitude}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.locationEn}
+                {t.columns.longitude}
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 
@@ -248,10 +248,10 @@ export default function TripsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.locationAr}
+                  {trip.latitude}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.locationEn}
+                  {trip.longitude}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.descriptionAr}

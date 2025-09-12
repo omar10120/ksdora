@@ -57,14 +57,14 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        if (data.isVerificationError) {
+        if (data.data.isVerificationError) {
           router.push(`/auth/verify-code?email=${formData.email}`)
           return
         }
-        throw new Error(data.error || 'Login failed')
+        throw new Error(data.data.error || 'Login failed')
       }
 
-      await login(data.user, data.token, data.refreshToken)
+      await login(data.data.user, data.data.token, data.data.refreshToken)
       setSuccess(true)
       
       // Delay redirect to show success state
@@ -80,7 +80,7 @@ export default function LoginPage() {
       // }
      
     } catch (err: any) {
-      setError(err.message)
+      setError(err.data.error || err.message)
     } finally {
       setLoading(false)
     }

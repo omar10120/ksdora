@@ -22,12 +22,13 @@ interface Booking {
 export default function RecentBookings() {
   const [bookings, setBookings] = useState<Booking[]>([])
   const { language, translations } = useLanguage()
+  const token = localStorage.getItem('token');
 
 
   useEffect(() => {
     const fetchRecentBookings = async () => {
       try {
-        const token = localStorage.getItem('token')
+
         const response = await fetch('/api/admin/stats', {
           headers: {
             'Content-Type': 'application/json',
@@ -35,7 +36,9 @@ export default function RecentBookings() {
           },
         })
         const data = await response.json()
-        setBookings(data.recentBookings || [])
+      if(data.success && data.data.bookings.recent){
+        setBookings(data.data.bookings.recent || [])
+      }
       } catch (error) {
         console.error('Error fetching recent bookings:', error)
       }

@@ -41,14 +41,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!refreshToken || isTokenExpired(refreshToken)) {
         logout()
         return
-      }
+      } 
   
       // Just trigger getValidToken to refresh access token if needed
       const token = await getValidToken()
       if (!token) {
         logout()
       }
-    }, 60000)
+    }, 600000)
   
     return () => clearInterval(checkTokenInterval)
   }, [])

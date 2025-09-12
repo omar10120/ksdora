@@ -1,11 +1,13 @@
 import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import prisma from '@/lib/prisma'
-import jwt from 'jsonwebtoken'
 import crypto from 'crypto'
 import { sendVerificationEmail } from '@/utils/emailService'
 import { ok } from 'assert'
 import { Varela } from 'next/font/google'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
 // Password validation function
 const isValidPassword = (password: string): boolean => {
@@ -24,7 +26,7 @@ const isValidPassword = (password: string): boolean => {
   );
 };
 
-export async function POST(req: Request) {
+export const POST = asyncHandler(async (req: Request) => {
   try {
     var { email, password , name, phone } = await req.json()
 
@@ -35,20 +37,12 @@ export async function POST(req: Request) {
      
     }
     if (!email || !password || !name) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Missing required fields', StatusCodes.BAD_REQUEST)
     }
 
     // Validate password
     if (!isValidPassword(password)) {
-      return NextResponse.json(
-        { 
-          error: 'Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters',
-          status: 400 
-        }
-      )
+      return ApiResponseBuilder.error('Password must be at least 8 characters long and contain uppercase, lowercase, numbers, and special characters', StatusCodes.BAD_REQUEST)
     }
 
     // Check if user already exists
@@ -57,10 +51,7 @@ export async function POST(req: Request) {
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email already in use' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Email already in use', StatusCodes.BAD_REQUEST)
     }
     
     const existingName = await prisma.user.findFirst({
@@ -74,10 +65,7 @@ export async function POST(req: Request) {
   
 
     if (existingName) {
-      return NextResponse.json(
-        { error: 'Username already taken' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Username already taken', StatusCodes.BAD_REQUEST)
     }
     
 
@@ -102,7 +90,7 @@ export async function POST(req: Request) {
     // Send verification email
     await sendVerificationEmail(email, verificationToken)
 
-    return NextResponse.json({  
+    return ApiResponseBuilder.success({  
       message: 'Registration successful. Please check your email to verify your account.',
       user: {
         id: user.id,
@@ -115,10 +103,8 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Registration error:', error)
-    return NextResponse.json(
-      { error: 'Failed to register user' },
-      { status: 500 },
-    )
+    return ApiResponseBuilder.error('Failed to register user', StatusCodes.INTERNAL_SERVER_ERROR)
   }
-}
+  }
+)
 

@@ -1,55 +1,94 @@
-import { NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function GET(
-  request: Request,
+// GET - Fetch route by ID
+export const GET = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const route = await prisma.route.findUnique({
       where: { id: params.id },
       include: {
-        departureCity: true,
-        arrivalCity: true,
+        departureCity: {
+          include: {
+            country: true
+          }
+        },
+        arrivalCity: {
+          include: {
+            country: true
+          }
+        },
         trips: {
           include: {
-            bus: true
+            bus: {
+              select: {
+                plateNumber: true,
+                model: true,
+                status: true
+              }
+            },
+            bookings: {
+              select: {
+                id: true,
+                status: true,
+                totalPrice: true,
+                bookingDate: true
+              }
+            }
+          },
+          orderBy: {
+            departureTime: 'asc'
           }
         }
       }
     })
 
     if (!route) {
-      return NextResponse.json(
-        { error: 'Route not found' },
-        { status: 404 }
-      )
+      return ApiResponseBuilder.notFound('Route')
     }
 
-    return NextResponse.json(route)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Internal server error route' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      route,
+      SuccessMessages.RETRIEVED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to fetch route')
   }
-}
+})
 
-export async function PUT(
-  request: Request,
+// PUT - Update route
+export const PUT = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
     const body = await request.json()
-    const { departureCityId, arrivalCityId, distance } = body
-
-    // Validate required fields
-    if (!departureCityId || !arrivalCityId || !distance) {
-      return NextResponse.json(
-        { error: 'Missing required fields' },
-        { status: 400 }
-      )
+    
+    // Validate request data
+    const validationResult = validateRequest(body, {
+      departureCityId: { required: true },
+      arrivalCityId: { required: true },
+      distance: { required: true, min: 1, max: 10000 }
+    })
+    
+    if (!validationResult.isValid) {
+      const errorMessages: Record<string, string[]> = {}
+      validationResult.errors.forEach(error => {
+        if (!errorMessages[error.field]) {
+          errorMessages[error.field] = []
+        }
+        errorMessages[error.field].push(error.message)
+      })
+      
+      return ApiResponseBuilder.validationError(errorMessages, ErrorMessages.VALIDATION_FAILED)
     }
+
+    const { departureCityId, arrivalCityId, distance } = body
 
     // Check if route exists
     const existingRoute = await prisma.route.findUnique({
@@ -57,10 +96,23 @@ export async function PUT(
     })
 
     if (!existingRoute) {
-      return NextResponse.json(
-        { error: 'Route not found' },
-        { status: 404 }
-      )
+      return ApiResponseBuilder.notFound('Route')
+    }
+
+    // Check if cities exist
+    const [departureCity, arrivalCity] = await Promise.all([
+      prisma.city.findUnique({ 
+        where: { id: departureCityId },
+        include: { country: true }
+      }),
+      prisma.city.findUnique({ 
+        where: { id: arrivalCityId },
+        include: { country: true }
+      })
+    ])
+
+    if (!departureCity || !arrivalCity) {
+      return ApiResponseBuilder.notFound('One or both cities')
     }
 
     // Check if updated route would create a duplicate
@@ -75,10 +127,7 @@ export async function PUT(
     })
 
     if (duplicateRoute) {
-      return NextResponse.json(
-        { error: 'Route already exists between these cities' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.conflict('Route already exists between these cities')
     }
 
     const updatedRoute = await prisma.route.update({
@@ -89,25 +138,43 @@ export async function PUT(
         distance
       },
       include: {
-        departureCity: true,
-        arrivalCity: true
+        departureCity: {
+          include: {
+            country: true
+          }
+        },
+        arrivalCity: {
+          include: {
+            country: true
+          }
+        }
       }
     })
 
-    return NextResponse.json(updatedRoute)
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to update route' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      updatedRoute,
+      SuccessMessages.UPDATED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to update route')
   }
-}
+})
 
-export async function DELETE(
-  request: Request,
+// DELETE - Delete route
+export const DELETE = asyncHandler(async (
+  request: NextRequest,
   { params }: { params: { id: string } }
-) {
+) => {
   try {
+    // Check if route exists
+    const existingRoute = await prisma.route.findUnique({
+      where: { id: params.id }
+    })
+
+    if (!existingRoute) {
+      return ApiResponseBuilder.notFound('Route')
+    }
+
     // Check if route has any trips
     const routeWithTrips = await prisma.route.findFirst({
       where: {
@@ -119,9 +186,10 @@ export async function DELETE(
     })
 
     if (routeWithTrips) {
-      return NextResponse.json(
-        { error: 'Cannot delete route with associated trips' },
-        { status: 400 }
+      return ApiResponseBuilder.error(
+        'Cannot delete route with associated trips',
+        StatusCodes.BAD_REQUEST,
+        'Route has associated trips and cannot be deleted'
       )
     }
 
@@ -129,11 +197,11 @@ export async function DELETE(
       where: { id: params.id }
     })
 
-    return NextResponse.json({ message: 'Route deleted successfully' })
-  } catch (error) {
-    return NextResponse.json(
-      { error: 'Failed to delete route' },
-      { status: 500 }
+    return ApiResponseBuilder.success(
+      null,
+      SuccessMessages.DELETED
     )
+  } catch (error) {
+    throw ApiError.database('Failed to delete route')
   }
-}
+})

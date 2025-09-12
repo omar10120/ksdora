@@ -75,8 +75,8 @@ export default function BookingsPage() {
       })
       
       const data = await response.json()
-      if (Array.isArray(data)) {
-        setBookings(data)
+      if (Array.isArray(data.data)) {
+        setBookings(data.data)
       } else {
         console.error('Invalid bookings response:', data)
         setBookings([])

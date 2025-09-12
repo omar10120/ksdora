@@ -23,6 +23,7 @@ const [stats, setStats] = useState({
     activeTrips: 0
   })
 
+  const token = localStorage.getItem('token')
   useEffect(() => {
     fetchDashboardStats()
   }, [])
@@ -32,14 +33,23 @@ const [stats, setStats] = useState({
 
   const fetchDashboardStats = async () => {
     try {
-      const token = localStorage.getItem('token')
+      
       const response = await fetch(`/api/admin/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
       const data = await response.json()
-      setStats(data)
+      
+      // Extract stats from the nested structure
+      if (data.success && data.data && data.data.overview) {
+        setStats({
+          totalUsers: data.data.overview.totalUsers,
+          totalBookings: data.data.overview.totalBookings,
+          totalRevenue: data.data.overview.totalRevenue,
+          activeTrips: data.data.overview.activeTrips
+        })
+      }
     } catch (error) {
       console.error('Error fetching dashboard stats:', error)
     }

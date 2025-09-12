@@ -21,7 +21,7 @@ interface Seat {
 }
 
 export default function AdminBlockSeats() {
-  const router = useRouter()
+  // const router = useRouter()
   const { language, translations } = useLanguage()
   const t = translations.dashboard.bookings.blockSeats
   const [trips, setTrips] = useState<Trip[]>([])
@@ -29,19 +29,40 @@ export default function AdminBlockSeats() {
   const [seats, setSeats] = useState<Seat[]>([])
   const [selectedSeats, setSelectedSeats] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
+  const token = localStorage.getItem('token')
 
   const fetchTrips = async () => {
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch('/api/admin/trips', {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch trips')
+      }
+      
       const data = await response.json()
-      setTrips(data)
+      
+      // Handle the new API response structure
+      if (data.success && data.data) {
+        // Check if data.data is paginated or direct array
+        if (Array.isArray(data.data)) {
+          setTrips(data.data)
+        } else if (data.data.trips && Array.isArray(data.data.trips)) {
+          setTrips(data.data.trips)
+        } else {
+          setTrips([])
+        }
+      } else {
+        // Fallback for old API structure
+        setTrips(Array.isArray(data.data) ? data.data : [])
+      }
     } catch (error) {
+      console.error('Fetch trips error:', error)
       toast.error(t.errors.fetchTrips)
+      setTrips([]) // Ensure trips is always an array
     } finally {
       setLoading(false)
     }
@@ -49,29 +70,39 @@ export default function AdminBlockSeats() {
 
   const fetchSeats = async (tripId: string) => {
     try {
-      
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/admin/trips/${tripId}/seats`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
+      
+      if (!response.ok) {
+        throw new Error('Failed to fetch seats')
+      }
+      
       const data = await response.json()
-      setSeats(data)
+      
+      // Handle the new API response structure
+      if (data.success && data.data && data.data.seats) {
+        setSeats(data.data.seats)
+      } else {
+        // Fallback for old API structure
+        setSeats(Array.isArray(data.data) ? data.data : [])
+      }
     } catch (error) {
+      console.error('Fetch seats error:', error)
       toast.error(t.errors.fetchSeats)
+      setSeats([]) // Ensure seats is always an array
     }
   }
 
   const handleBlockSeats = async () => {
-    
     if (!selectedSeats.length) {
       toast.error(t.errors.noSeatsSelected)
       return
     }
 
     try {
-      const token = localStorage.getItem('token')
       const response = await fetch(`/api/admin/trips/${selectedTrip}/block-seats`, {
         method: 'POST',
         headers: {
@@ -81,15 +112,27 @@ export default function AdminBlockSeats() {
         body: JSON.stringify({ seatIds: selectedSeats })
       })
 
-      if (!response.ok) throw new Error(t.errors.blockSeats)
+      const data = await response.json()
 
-      toast.success(t.success.seatsBlocked)
-      fetchSeats(selectedTrip)
-      setSelectedSeats([])
+      if (!response.ok) {
+        // Handle API error response
+        const errorMessage = data.error || data.message || t.errors.blockSeats
+        throw new Error(errorMessage)
+      }
+
+      // Handle success response
+      if (data.success) {
+        toast.success(data.message || t.success.seatsBlocked)
+        fetchSeats(selectedTrip) // Refresh seats
+        setSelectedSeats([]) // Clear selection
+      } else {
+        throw new Error(data.error || t.errors.blockSeats)
+      }
       
     } catch (error) {
-      toast.error(t.errors.blockSeats)
-      
+      console.error('Block seats error:', error)
+      const errorMessage = error instanceof Error ? error.message : t.errors.blockSeats
+      toast.error(errorMessage)
     }
   }
   
@@ -158,16 +201,22 @@ export default function AdminBlockSeats() {
               {selectedTrip && !loading && (
               <>
                 <div className="grid grid-cols-4 gap-4 mb-6 ">
-                  {seats.map((seat) => (
-                    <button
-                      key={seat.id}
-                      onClick={() => seat.status === 'available' && handleSeatClick(seat.id)}
-                      disabled={seat.status !== 'available'}
-                      className={`p-4 border rounded-lg ${getSeatColor(seat)} transition-colors duration-200 `}
-                    >
-                      {seat.seatNumber}
-                    </button>
-                  ))}
+                  {Array.isArray(seats) && seats.length > 0 ? (
+                    seats.map((seat: Seat) => (
+                      <button
+                        key={seat.id}
+                        onClick={() => seat.status === 'available' && handleSeatClick(seat.id)}
+                        disabled={seat.status !== 'available'}
+                        className={`p-4 border rounded-lg ${getSeatColor(seat)} transition-colors duration-200 `}
+                      >
+                        {seat.seatNumber}
+                      </button>
+                    ))
+                  ) : (
+                    <div className="col-span-4 text-center py-8 text-gray-500">
+                      {t.errors.noSeatsFound || 'No seats found for this trip'}
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex justify-between items-center flex-wrap flex-auto max-sm:flex-col max-sm:space-y-4 ">

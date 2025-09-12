@@ -1,15 +1,15 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function POST(req: Request) {
+export const POST = asyncHandler(async (req: Request) => {
   try {
     const { email, code } = await req.json()
 
     if (!email || !code) {
-      return NextResponse.json(
-        { error: 'Email and verification code are required' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Email and verification code are required', StatusCodes.BAD_REQUEST)
     }
 
     // ✅ Decode email (especially for "+" symbols)
@@ -20,19 +20,13 @@ export async function POST(req: Request) {
     })
 
     if (!user || !user.verificationToken) {
-      return NextResponse.json(
-        { error: `Invalid verification attempt` },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Invalid verification attempt', StatusCodes.BAD_REQUEST)
     }
 
     const storedCode = user.verificationToken.substring(0, 6).toUpperCase()
 
     if (code.toUpperCase() !== storedCode) {
-      return NextResponse.json(
-        { error: 'Invalid verification code' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Invalid verification code', StatusCodes.BAD_REQUEST)
     }
 
     await prisma.user.update({
@@ -43,12 +37,10 @@ export async function POST(req: Request) {
       }
     })
 
-    return NextResponse.json({ message: 'Email verified successfully' })
+    return ApiResponseBuilder.success({ message: 'Email verified successfully' })
   } catch (error) {
     console.error('Verification error:', error)
-    return NextResponse.json(
-      { error: 'Failed to verify email' },
-      { status: 500 }
-    )
+    return ApiResponseBuilder.error('Failed to verify email', StatusCodes.INTERNAL_SERVER_ERROR)
   }
-}
+})
+

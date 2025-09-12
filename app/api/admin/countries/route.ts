@@ -1,40 +1,36 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
-import { validateRequest } from '@/lib/validation'
+import { validateRequest, ValidationSchemas } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-// GET - Fetch all buses
+// GET - Fetch all countries
 export const GET = asyncHandler(async (request: NextRequest) => {
   try {
-    const buses = await prisma.bus.findMany({
+    const countries = await prisma.country.findMany({
+
       orderBy: {
-        plateNumber: 'asc'
+        name: 'asc'
       }
     })
 
     return ApiResponseBuilder.success(
-      buses,
-      SuccessMessages.RETRIEVED
+      countries,
+      SuccessMessages.RETRIEVED,
+      200
     )
   } catch (error) {
-    throw ApiError.database('Failed to fetch buses')
+    throw ApiError.database('Failed to fetch countries')
   }
 })
 
-// POST - Create new bus
+// POST - Create new country
 export const POST = asyncHandler(async (request: NextRequest) => {
   try {
     const body = await request.json()
     
     // Validate request data
-    const validationResult = validateRequest(body, {
-      plateNumber: { required: true, minLength: 5, maxLength: 20 },
-      capacity: { required: true, min: 1, max: 100 },
-      model: { required: true, minLength: 2, maxLength: 100 },
-      status: { required: true, enum: ['active', 'maintenance', 'inactive'] }
-    })
-    
+    const validationResult = validateRequest(body, ValidationSchemas.country)
     if (!validationResult.isValid) {
       const errorMessages: Record<string, string[]> = {}
       validationResult.errors.forEach(error => {
@@ -43,38 +39,44 @@ export const POST = asyncHandler(async (request: NextRequest) => {
         }
         errorMessages[error.field].push(error.message)
       })
+
+      
       
       return ApiResponseBuilder.validationError(errorMessages, ErrorMessages.VALIDATION_FAILED)
     }
 
-    const { plateNumber, capacity, model, status } = body
+    const { name, nameAr, code } = body
 
-    // Check if bus with same plate number exists
-    const existingBus = await prisma.bus.findFirst({
+
+
+    // Check if country already exists
+    const existingcountry = await prisma.country.findFirst({
       where: {
-        plateNumber
+        OR: [
+          { name },
+          { nameAr }
+        ]
       }
     })
 
-    if (existingBus) {
-      return ApiResponseBuilder.conflict('Bus with this plate number already exists')
+    if (existingcountry) {
+      return ApiResponseBuilder.conflict('country with this name already exists')
     }
 
-    // Create bus
-    const bus = await prisma.bus.create({
+    // Create country
+    const country = await prisma.country.create({
       data: {
-        plateNumber,
-        capacity,
-        model,
-        status
+        name,
+        nameAr,
+        code
       }
     })
 
     return ApiResponseBuilder.created(
-      bus,
+      country,
       SuccessMessages.CREATED
     )
   } catch (error) {
-    throw ApiError.database('Failed to create bus')
+    throw ApiError.database('Failed to create country')
   }
 })

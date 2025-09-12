@@ -2,17 +2,17 @@ import { NextResponse } from 'next/server'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import prisma from '@/lib/prisma'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { validateRequest, createValidationResponse } from '@/lib/validation'
+import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
-export async function POST(req: Request) {
+export const POST = asyncHandler(async (req: Request) => {
   try {
     const { email, password } = await req.json()
 
     // Validate required fields
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email and password are required' },
-        { status: 400 }
-      )
+      return ApiResponseBuilder.error('Email and password are required', StatusCodes.BAD_REQUEST)
     }
 
     const user = await prisma.user.findUnique({
@@ -20,30 +20,19 @@ export async function POST(req: Request) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
+      return ApiResponseBuilder.error('Invalid credentials', StatusCodes.UNAUTHORIZED)
     }
 
     // Check if email is verified
     if (!user.emailVerified) {
-      return NextResponse.json(
-        { 
-          error: 'Please verify your email before logging in',
-          isVerificationError: true 
-        },
-        { status: 403 }
-      )
+        return ApiResponseBuilder.error('Please verify your email before logging in', StatusCodes.FORBIDDEN)
+        
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
-      return NextResponse.json(
-        { error: 'Invalid credentials' },
-        { status: 401 }
-      )
+      return ApiResponseBuilder.error('Invalid credentials', StatusCodes.UNAUTHORIZED)
     }
 
     // Clear any existing refresh tokens for this user
@@ -72,7 +61,7 @@ export async function POST(req: Request) {
       }
     })
 
-    return NextResponse.json({
+    return ApiResponseBuilder.success({
       message: 'Login successful',
       token,
       refreshToken,
@@ -86,9 +75,6 @@ export async function POST(req: Request) {
     })
   } catch (error) {
     console.error('Login error:', error)
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    )
+    return ApiResponseBuilder.error('Internal server error', StatusCodes.INTERNAL_SERVER_ERROR)
   }
-}
+})
