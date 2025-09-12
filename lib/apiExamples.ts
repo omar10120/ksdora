@@ -1,7 +1,7 @@
 import { NextRequest } from 'next/server'
 import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from './apiResponse'
 import { validateRequest, ValidationSchemas } from './validation'
-import { asyncHandler, ApiError } from './errorHandler'
+import { asyncHandler, ApiError, ErrorType } from './errorHandler'
 import prisma from './prisma'
 
 // Example 1: Simple GET endpoint with success response
@@ -223,7 +223,7 @@ export const getBookingDetailsExample = asyncHandler(async (request: NextRequest
           bus: true
         }
       },
-      bookingDetails: {
+      details: {
         include: {
           seat: true
         }
@@ -234,7 +234,7 @@ export const getBookingDetailsExample = asyncHandler(async (request: NextRequest
         }
       },
       ratings: true,
-      feedback: true
+      feedbacks: true
     }
   })
 
@@ -291,7 +291,7 @@ export const processPaymentExample = asyncHandler(async (request: NextRequest) =
     const paymentResult = await processExternalPayment(amount, method)
     
     if (!paymentResult.success) {
-      throw ApiError.external('Payment processing failed')
+      throw ApiError.internal('Payment processing failed')
     }
 
     // Update bill and create payment record
@@ -328,7 +328,7 @@ export const processPaymentExample = asyncHandler(async (request: NextRequest) =
       }
     })
 
-    throw ApiError.external('Payment processing failed')
+    throw ApiError.internal('Payment processing failed')
   }
 })
 

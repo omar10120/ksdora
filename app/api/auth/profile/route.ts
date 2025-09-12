@@ -7,6 +7,9 @@ import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from 
 import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic'
+
 export const GET = asyncHandler(async (req: Request) => {
   try {
     const authHeader = req.headers.get('authorization')

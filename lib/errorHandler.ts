@@ -119,18 +119,18 @@ export class ErrorHandler {
   private static handlePrismaError(error: any) {
     switch (error.code) {
       case 'P2002':
-        return ApiResponseBuilder.conflict('Resource already exists')
+        return ApiResponseBuilder.conflict(error.message)
       case 'P2025':
         return ApiResponseBuilder.notFound('Record not found')
       case 'P2003':
         return ApiResponseBuilder.validationError(
           { foreignKey: ['Referenced record does not exist'] },
-          'Foreign key constraint failed'
+          error.message
         )
       case 'P2014':
-        return ApiResponseBuilder.conflict('The change you are trying to make would violate the required relation')
+        return ApiResponseBuilder.conflict(error.message)
       default:
-        return ApiResponseBuilder.database('Database operation failed')
+        return ApiResponseBuilder.error(error.message)
     }
   }
 
@@ -226,9 +226,9 @@ export class ErrorHandler {
 
   // Async error wrapper for route handlers
   static asyncHandler(fn: Function) {
-    return async (request: NextRequest, ...args: any[]) => {
+    return async (request: NextRequest, context?: { params: any }) => {
       try {
-        return await fn(request, ...args)
+        return await fn(request, context)
       } catch (error) {
         return this.handle(error, request)
       }

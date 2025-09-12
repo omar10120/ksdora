@@ -3,6 +3,9 @@ import { headers } from 'next/headers';
 import prisma from '@/lib/prisma';
 import jwt from 'jsonwebtoken';
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const headersList = headers();

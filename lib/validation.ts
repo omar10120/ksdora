@@ -234,7 +234,7 @@ export const ValidationSchemas = {
     email: { required: true, email: true },
     password: { required: true, minLength: 6, maxLength: 100 },
     phone: { required: false, pattern: /^\+?[\d\s\-\(\)]+$/ },
-    role: { required: false, enum: ['USER', 'ADMIN'] }
+    role: { required: false, enum: ['USER', 'ADMIN'] as string[] }
   },
 
   // City validation
@@ -281,8 +281,8 @@ export const ValidationSchemas = {
   payment: {
     billId: { required: true },
     amount: { required: true, min: 0 },
-    method: { required: true, enum: ['cash', 'card', 'bank_transfer', 'company_alharam'] },
-    status: { required: true, enum: ['pending', 'successful', 'failed'] }
+    method: { required: true, enum: ['cash', 'card', 'bank_transfer', 'company_alharam'] as string[] },
+    status: { required: true, enum: ['pending', 'successful', 'failed'] as string[] }
   }
 } as const
 

@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma'
 import { ApiResponseBuilder, SuccessMessages } from '@/lib/apiResponse'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic'
+
 // GET - Fetch dashboard statistics
 export const GET = asyncHandler(async (request: NextRequest) => {
   try {

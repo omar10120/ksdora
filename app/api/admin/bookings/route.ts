@@ -3,6 +3,9 @@ import prisma from '@/lib/prisma'
 import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic'
+
 // GET - Fetch all bookings with pagination and filters
 export const GET = asyncHandler(async (request: NextRequest) => {
   try {

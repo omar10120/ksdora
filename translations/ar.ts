@@ -528,6 +528,8 @@ export const ar = {
           to: 'إلى',
           distance: 'المسافة (كم)',
           activeTrips: 'الرحلات النشطة',
+          createdAt: 'تاريخ الإنشاء',
+          updatedAt: 'تاريخ التحديث',
           actions: 'إجراءات'
         },
         delete: {
@@ -757,6 +759,7 @@ export const ar = {
           customer: 'العميل',
           route: 'المسار',
           seats: 'المقاعد',
+          
           status: 'الحالة',
           amount: 'المبلغ',
           actions: 'إجراءات'
@@ -811,7 +814,8 @@ export const ar = {
             fetchTrips: 'فشل في جلب الرحلات',
             fetchSeats: 'فشل في جلب المقاعد',
             blockSeats: 'فشل في حظر مقاعد',
-            noSeatsSelected: 'الرجاء تحديد المقاعد للحظر'
+            noSeatsSelected: 'الرجاء تحديد المقاعد للحظر',
+            noSeatsFound: 'لم يتم العثور على مقاعد لهذه الرحلة'
           },
           success: {
             seatsBlocked: 'تم حظر مقاعد بنجاح'
