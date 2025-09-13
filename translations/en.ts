@@ -741,7 +741,9 @@ export const en = {
             seats: 'Seats',
             status: 'Status',
             amount: 'Amount',
-            actions: 'Actions'
+            actions: 'Actions',
+            createdAt :  'created at',
+            updatedAt : 'updated at'
           },
           status: {
             confirmed: 'Confirmed',

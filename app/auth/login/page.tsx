@@ -57,11 +57,11 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (!response.ok) {
-        if (data.data.isVerificationError) {
+        if (data.data?.isVerificationError) {
           router.push(`/auth/verify-code?email=${formData.email}`)
           return
         }
-        throw new Error(data.data.error || 'Login failed')
+        throw new Error(data.data?.error || data.error || 'Login failed')
       }
 
       await login(data.data.user, data.data.token, data.data.refreshToken)
@@ -79,8 +79,8 @@ export default function LoginPage() {
       //   }, 1500)
       // }
      
-    } catch (err: any) {
-      setError(err.data.error || err.message)
+    } catch (error: any) {
+      setError(error.message || error.error || 'Login failed')
     } finally {
       setLoading(false)
     }

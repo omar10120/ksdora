@@ -72,7 +72,9 @@ export const ar = {
       seats: 'المقاعد',
       price: 'السعر',
       viewDetails: 'عرض التفاصيل',
-      cancelBooking: 'إلغاء الحجز'
+      cancelBooking: 'إلغاء الحجز',
+      createdAt :  'تاريخ الإنشاء',
+      updatedAt : 'تاريخ التحديث'
     },
     modal: {
       title: 'تفاصيل الحجز',
@@ -759,10 +761,11 @@ export const ar = {
           customer: 'العميل',
           route: 'المسار',
           seats: 'المقاعد',
-          
           status: 'الحالة',
           amount: 'المبلغ',
-          actions: 'إجراءات'
+          actions: 'إجراءات',
+          createdAt: 'تاريخ الإنشاء',
+          updatedAt: 'تاريخ التحديث'
         },
         status: {
           confirmed: 'مؤكد',

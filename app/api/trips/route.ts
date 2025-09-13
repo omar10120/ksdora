@@ -458,7 +458,9 @@ export const POST = asyncHandler(async (request: NextRequest) => {
         titleEn,
         descriptionAr,
         descriptionEn,
-        imageUrls: imageUrls ? JSON.stringify(imageUrls) : null
+        imageUrls: imageUrls ? JSON.stringify(imageUrls) : null,
+        createdAt: new Date(),
+        
       },
       include: {
         route: {

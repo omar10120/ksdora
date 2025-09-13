@@ -1,9 +1,13 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { Decimal } from '@prisma/client/runtime/library'
-import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages ,StatusCodes } from '@/lib/apiResponse'
 import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
+import { Seat } from '@prisma/client'
+
+// Force dynamic rendering for this API route
+export const dynamic = 'force-dynamic'
 
 export const POST = asyncHandler(async (request: NextRequest) => {
   const body = await request.json()
@@ -14,18 +18,32 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     return ApiResponseBuilder.unauthorized('Authentication required')
   }
 
-  // Validate request data
+  // Validate request data - support both seat selection methods
   const validationResult = validateRequest(body, {
     tripId: { required: true },
     seatsNumber: { 
-      required: true, 
+      required: false, 
       min: 1, 
       max: 10,
       custom: (value: any) => {
+        if (value === undefined || value === null) return true // Optional if selectedSeats provided
         const parsed = parseInt(value)
         if (isNaN(parsed)) return 'Seats number must be a valid number'
         if (parsed <= 0) return 'Seats number must be greater than 0'
         if (parsed > 10) return 'Maximum 10 seats per booking'
+        return true
+      }
+    },
+    selectedSeats: {
+      required: false,
+      custom: (value: any) => {
+        if (value === undefined || value === null) return true // Optional if seatsNumber provided
+        if (!Array.isArray(value)) return 'Selected seats must be an array'
+        if (value.length === 0) return 'At least one seat must be selected'
+        if (value.length > 10) return 'Maximum 10 seats per booking'
+        if (!value.every(seat => typeof seat === 'string' && seat.trim().length > 0)) {
+          return 'All seat numbers must be non-empty strings'
+        }
         return true
       }
     }
@@ -35,10 +53,21 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     return createValidationResponse(validationResult)
   }
 
-  const { tripId, seatsNumber } = body
-  const parsedSeats = parseInt(seatsNumber)
+  const { tripId, seatsNumber, selectedSeats } = body
 
-  // Check if trip exists and is available for booking
+  // Ensure at least one selection method is provided
+  if (!seatsNumber && !selectedSeats) {
+    return ApiResponseBuilder.validationError(
+      { seatsNumber: ['Either seatsNumber or selectedSeats must be provided'] },
+      ErrorMessages.VALIDATION_FAILED
+    )
+  }
+
+  // Determine seat selection method
+  const useSpecificSeats = selectedSeats && selectedSeats.length > 0
+  const seatCount = useSpecificSeats ? selectedSeats.length : parseInt(seatsNumber)
+
+  // Comprehensive trip validation
   const trip = await prisma.trip.findUnique({
     where: { id: tripId },
     include: {
@@ -53,7 +82,15 @@ export const POST = asyncHandler(async (request: NextRequest) => {
           id: true,
           plateNumber: true,
           model: true,
-          capacity: true
+          capacity: true,
+          status: true
+        }
+      },
+      seats: {
+        select: {
+          id: true,
+          seatNumber: true,
+          status: true
         }
       }
     }
@@ -63,37 +100,94 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     return ApiResponseBuilder.notFound('Trip')
   }
 
-  // Check if trip is available for booking
+  // Comprehensive business logic validation
+  const validationErrors: string[] = []
+
+  // Check trip status
   if (trip.status !== 'scheduled') {
-    return ApiResponseBuilder.error(
-      `Trip is not available for booking. Current status: ${trip.status}`,
-      400
-    )
+    validationErrors.push(`Trip is not available for booking. Current status: ${trip.status}`)
   }
 
-  // Check if booking deadline has passed
+  // Check booking deadline
   if (trip.lastBookingTime && new Date() > trip.lastBookingTime) {
+    validationErrors.push('Booking deadline has passed for this trip')
+  }
+
+  // Check bus status
+  if (trip.bus.status !== 'active' && trip.bus.status !== 'passenger_filling') {
+    validationErrors.push(`Bus is not available for booking. Current status: ${trip.bus.status}`)
+  }
+
+  // Check departure time (can't book trips that have already departed)
+  if (trip.departureTime && new Date() > trip.departureTime) {
+    validationErrors.push('Cannot book a trip that has already departed')
+  }
+
+  // Check seat availability
+  const availableSeatsCount = trip.seats.filter(seat => seat.status === 'available').length
+  if (availableSeatsCount < seatCount) {
+    validationErrors.push(`Only ${availableSeatsCount} seats are available. Requested: ${seatCount}`)
+  }
+
+  // Check if user already has a booking for this trip
+  const existingUserBooking = await prisma.booking.findFirst({
+    where: {
+      userId,
+      tripId,
+      status: { in: ['pending', 'confirmed'] }
+    }
+  })
+
+  if (existingUserBooking) {
+    validationErrors.push('You already have an active booking for this trip')
+  }
+
+  // Return validation errors if any
+  if (validationErrors.length > 0) {
     return ApiResponseBuilder.error(
-      'Booking deadline has passed for this trip',
-      400
+      validationErrors.join('; '),
+      StatusCodes.BAD_REQUEST
     )
   }
 
   const booking = await prisma.$transaction(async (tx) => {
-    const availableSeats = await tx.seat.findMany({
-      where: {
-        tripId,
-        status: 'available'
-      },
-      take: parsedSeats,
-      orderBy: { seatNumber: 'asc' }
-    });
+    let availableSeats: Seat[]
 
-    if (availableSeats.length < parsedSeats) {
-      throw ApiError.validation(`Only ${availableSeats.length} seats are available. Requested: ${parsedSeats}`)
+    if (useSpecificSeats) {
+      // Find specific seats by seat numbers
+      availableSeats = await tx.seat.findMany({
+        where: {
+          tripId,
+          seatNumber: { in: selectedSeats },
+          status: 'available'
+        }
+      });
+
+      if (availableSeats.length !== selectedSeats.length) {
+        const unavailableSeats = selectedSeats.filter(
+          (seatNumber: string) => !availableSeats.some(seat => seat.seatNumber === seatNumber)
+        );
+        throw ApiError.validation(
+          `The following seats are not available: ${unavailableSeats.join(', ')}`
+        )
+      }
+    } else {
+      // Find any available seats (quantity-based selection)
+      availableSeats = await tx.seat.findMany({
+        where: {
+          tripId,
+          status: 'available'
+        },
+        take: seatCount,
+        orderBy: { seatNumber: 'asc' }
+      });
+
+      if (availableSeats.length < seatCount) {
+        throw ApiError.validation(`Only ${availableSeats.length} seats are available. Requested: ${seatCount}`)
+      }
     }
 
-    const totalPrice = new Decimal(trip.price).mul(parsedSeats);
+    const totalPrice = new Decimal(trip.price).mul(availableSeats.length);
 
     const newBooking = await tx.booking.create({
       data: {
@@ -106,6 +200,12 @@ export const POST = asyncHandler(async (request: NextRequest) => {
             seatId: seat.id,
             price: trip.price
           }))
+        },
+        bill: {
+          create: {
+            amount: totalPrice,
+            status: 'unpaid'
+          }
         }
       },
       include: {
@@ -134,6 +234,19 @@ export const POST = asyncHandler(async (request: NextRequest) => {
                 id: true,
                 seatNumber: true,
                 status: true
+              }
+            }
+          }
+        },
+        bill: {
+          include: {
+            payments: {
+              select: {
+                id: true,
+                amount: true,
+                method: true,
+                status: true,
+                paidAt: true
               }
             }
           }
@@ -175,7 +288,13 @@ export const POST = asyncHandler(async (request: NextRequest) => {
         id: detail.seat.id,
         seatNumber: detail.seat.seatNumber,
         price: detail.price
-      }))
+      })),
+      payment: {
+        billId: booking.bill?.id,
+        amount: booking.bill?.amount,
+        status: booking.bill?.status,
+        payments: booking.bill?.payments
+      }
     },
     SuccessMessages.BOOKING_CONFIRMED
   )
@@ -302,9 +421,11 @@ export const GET = asyncHandler(async (request: NextRequest) => {
     hasPrev: page > 1
   }
 
-  return ApiResponseBuilder.paginated(
-    formattedBookings,
-    pagination,
+  return ApiResponseBuilder.success(
+    {
+      bookings: formattedBookings,
+      pagination
+    },
     `${formattedBookings.length} bookings found`
   )
 })

@@ -5,6 +5,7 @@ export interface Translations {
     myBookings: string,
     bookSeat : string,
     dashboard : string,
+    admin : string,
   }
   
   trips: {
@@ -77,6 +78,8 @@ export interface Translations {
       price: string
       viewDetails:string
       cancelBooking: string
+      
+      
     },
     modal: {
       title: string
@@ -296,6 +299,8 @@ export interface Translations {
           date: string
           status: string
           amount: string
+          createdAt:string
+          updatedat:string
         }
         noBookings: string
       }

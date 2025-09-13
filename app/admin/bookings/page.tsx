@@ -19,6 +19,8 @@ interface Booking {
   bookingDate: string
   status: 'confirmed' | 'completed' | 'cancelled' | 'pending'
   totalPrice: string | number
+  createdAt : Date
+  updatedAt : Date
   details: {
     id: string
     bookingId: string
@@ -257,6 +259,12 @@ export default function BookingsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t.columns.amount}
                   </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"> 
+                    {t.columns.createdAt}
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"> 
+                    {t.columns.updatedAt}
+                  </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t.columns.actions}
                   </th>
@@ -291,6 +299,12 @@ export default function BookingsPage() {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {booking.totalPrice} SAR
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {booking.createdAt.toString()} 
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                      {booking.updatedAt.toString()}   
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-3">

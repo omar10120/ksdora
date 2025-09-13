@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
-import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
 import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
@@ -18,7 +18,7 @@ export const GET = asyncHandler(async (
 
   // Validate booking ID
   if (!bookingId || typeof bookingId !== 'string') {
-    return ApiResponseBuilder.error('Invalid booking ID', 400)
+    return ApiResponseBuilder.error('Invalid booking ID', StatusCodes.BAD_REQUEST)
   }
 
   const booking = await prisma.booking.findUnique({
@@ -130,7 +130,7 @@ export const PUT = asyncHandler(async (
 
   // Validate booking ID
   if (!bookingId || typeof bookingId !== 'string') {
-    return ApiResponseBuilder.error('Invalid booking ID', 400)
+    return ApiResponseBuilder.error('Invalid booking ID', StatusCodes.BAD_REQUEST)
   }
 
   // Validate request data
@@ -176,23 +176,24 @@ export const PUT = asyncHandler(async (
   // Business logic validation
   if (existingBooking.status === 'completed') {
     return ApiResponseBuilder.error(
-      'Cannot modify completed bookings',
-      400
+      'Cannot modify completed bookings'
+      
     )
   }
 
   if (existingBooking.status === 'cancelled' && status !== 'cancelled') {
     return ApiResponseBuilder.error(
       'Cannot change status of cancelled booking',
-      400
+      StatusCodes.BAD_REQUEST
     )
+    
   }
 
   // Check if trip is still available for changes
   if (status === 'confirmed' && existingBooking.trip.status !== 'scheduled') {
     return ApiResponseBuilder.error(
       'Cannot confirm booking for trip that is not scheduled',
-      400
+      StatusCodes.BAD_REQUEST
     )
   }
 
