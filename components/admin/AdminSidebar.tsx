@@ -15,17 +15,19 @@ import {
   BuildingOfficeIcon,
   Bars3Icon,
   XMarkIcon,
-  LanguageIcon
+  LanguageIcon,
+  CreditCardIcon
 
 } from '@heroicons/react/24/outline'
 import { useLanguage } from '@/context/LanguageContext'
-import { LayoutRouter } from 'next/dist/server/app-render/entry-base'
-import { dir } from 'console'
+
+
 
 const getMenuItems = (t: any) => [
   { href: '/admin', icon: HomeIcon, label: t.dashboard },
   { href: '/admin/users', icon: UsersIcon, label: t.users },
   { href: '/admin/bookings', icon: TicketIcon, label: t.bookings },
+  { href: '/admin/payments', icon: CreditCardIcon, label: t.payments },
   { href: '/admin/trips', icon: CalendarIcon, label: t.trips },
   { href: '/admin/buses', icon: TruckIcon, label: t.buses },  
   { href: '/admin/routes', icon: MapIcon, label: t.routes }, 
@@ -33,6 +35,8 @@ const getMenuItems = (t: any) => [
   { href: '/admin/countries', icon: BuildingOfficeIcon, label: t.countries }, 
   { href: '/admin/reports', icon: ChartBarIcon, label: t.reports },
   { href: '/admin/settings', icon: CogIcon, label: t.settings },
+  
+  
   // { href: '', icon: CogIcon, label: t.logout },
   
 ]

@@ -337,7 +337,8 @@ export const en = {
           cities: 'Cities',
           countries: 'Countries',
           reports: 'Reports',
-          settings: 'Settings'
+          settings: 'Settings',
+          payments: 'Payments'
         },
         home: {
           title: 'Dashboard Overview',

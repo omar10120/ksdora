@@ -362,7 +362,8 @@ export const ar = {
         cities: 'المدن',
         countries: 'البلدان',
         reports: 'التقارير',
-        settings: 'الإعدادات'
+        settings: 'الإعدادات',
+        payments: 'عمليات الدفع'
       },
       home: {
         title: 'واجهة لوحة التحكم',

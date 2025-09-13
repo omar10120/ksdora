@@ -55,6 +55,20 @@ interface Booking {
       }
     }
   }
+  bill?: {
+    id: string
+    amount: string | number
+    status: 'paid' | 'unpaid'
+    payments: {
+      id: string
+      amount: string | number
+      method: string
+      status: 'pending' | 'successful' | 'failed'
+      receiptImage?: string
+      paidAt?: string
+      createdAt: string
+    }[]
+  }
 }
 
 export default function BookingsPage() {
@@ -181,6 +195,23 @@ export default function BookingsPage() {
     }
   }
 
+  const getBillStatusColor = (status: string) => {
+    switch (status) {
+      case 'paid': return 'bg-green-100 text-green-800'
+      case 'unpaid': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPaymentStatusColor = (status: string) => {
+    switch (status) {
+      case 'successful': return 'bg-green-100 text-green-800'
+      case 'pending': return 'bg-yellow-100 text-yellow-800'
+      case 'failed': return 'bg-red-100 text-red-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
   const filteredBookings = bookings.filter(booking => 
     booking.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     booking.user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -257,20 +288,25 @@ export default function BookingsPage() {
                     {t.columns.status}
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Bill Status
+                  </th>
+                  
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t.columns.amount}
                   </th>
+             
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"> 
                     {t.columns.createdAt}
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"> 
+                  {/* <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"> 
                     {t.columns.updatedAt}
-                  </th>
+                  </th> */}
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t.columns.actions}
                   </th>
                 </tr>
               </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
+              <tbody className="bg-white divide-y divide-gray-200"> 
                 {filteredBookings.map((booking) => (
                   <tr key={booking.id} className="hover:bg-gray-50 transition-colors">
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -281,7 +317,10 @@ export default function BookingsPage() {
                       <div className="text-sm text-gray-500">{booking.user.email}</div>
                     </td>     
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {booking.details?.map(detail => detail.seat.seatNumber).join(', ') || '-'}
+                      {/* {booking.details?.map(detail => detail.seat.seatNumber).join(', ') || '-'} */}
+                      {booking.details.length}
+
+                        
                     </td>
                     
                     <td className="px-6 py-4 whitespace-nowrap">
@@ -297,15 +336,36 @@ export default function BookingsPage() {
                         {t.status[booking.status]}
                       </span>
                     </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      {booking.bill ? (
+                        <div className="space-y-1">
+                          <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getBillStatusColor(booking.bill.status)}`}>
+                            {booking.bill.status === 'paid' ? 'Paid' : 'Unpaid'}
+                          </span>
+                          {booking.bill.payments && booking.bill.payments.length > 0 && (
+                            <div className="text-xs text-gray-500">
+                              {booking.bill.payments.filter(p => p.status === 'pending').length > 0 && (
+                                <span className="text-yellow-600">
+                                  {booking.bill.payments.filter(p => p.status === 'pending').length} pending
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-gray-400 text-sm">No bill</span>
+                      )}
+                    </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {booking.totalPrice} SAR
                     </td>
+                    
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {booking.createdAt.toString()} 
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                    {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {booking.updatedAt.toString()}   
-                    </td>
+                    </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                       <div className="flex justify-end gap-3">
                         {/* <button

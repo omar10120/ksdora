@@ -27,6 +27,7 @@ export const GET = asyncHandler(async (
                 model: true
               }
             }
+            
           }
         },
         details: {
