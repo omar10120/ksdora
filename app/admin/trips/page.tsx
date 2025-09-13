@@ -201,7 +201,7 @@ export default function TripsPage() {
                 
                 {t.columns.imageurl}
               </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">
                 {t.columns.actions}
               </th>
             </tr>
@@ -262,7 +262,7 @@ export default function TripsPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px] flex overflow-x-scroll">
                   {trip.imageUrls}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-gray-50 z-10">
                   {t.status[trip.status]!= 'Completed' &&(
                     <>
                         <button

@@ -270,7 +270,7 @@ export default function PaymentsPage() {
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Created At
                   </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">
                     Actions
                   </th>
                 </tr>
@@ -327,7 +327,7 @@ export default function PaymentsPage() {
                       {new Date(payment.createdAt).toLocaleString()}
                     </td>
 
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-gray-50 z-10">
                       <div className="flex justify-end gap-3">
                         {payment.status === 'pending' && (
                           <>

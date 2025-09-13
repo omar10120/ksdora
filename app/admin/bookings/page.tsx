@@ -6,7 +6,9 @@ import {
   EyeIcon, 
   TrashIcon,
   ArrowLeftIcon,
-  MagnifyingGlassIcon 
+  MagnifyingGlassIcon,
+  CheckIcon,
+  XMarkIcon
 } from '@heroicons/react/24/outline'
 import ConfirmDialogAdmin from '@/components/ConfirmDialogAdmin'
 import { useLanguage } from '@/context/LanguageContext'
@@ -110,23 +112,33 @@ export default function BookingsPage() {
     fetchBookings()
   }, [])
 
-  // Add new state for confirm dialog
+  // Add new state for confirm and cancel dialogs
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false)
-  const [bookingToConfirm, setBookingToConfirm] = useState<string | null>(null)
+  const [isCancelDialogOpen, setIsCancelDialogOpen] = useState(false)
+  const [bookingToAction, setBookingToAction] = useState<string | null>(null)
+  const [actionType, setActionType] = useState<'confirm' | 'cancel' | null>(null)
   
-  // Modify the handleConfirmBooking to open dialog first
+  // Handle confirm click
   const handleConfirmClick = (bookingId: string) => {
-    setBookingToConfirm(bookingId)
+    setBookingToAction(bookingId)
+    setActionType('confirm')
     setIsConfirmDialogOpen(true)
   }
+
+  // Handle cancel click
+  const handleCancelClick = (bookingId: string) => {
+    setBookingToAction(bookingId)
+    setActionType('cancel')
+    setIsCancelDialogOpen(true)
+  }
   
-  // Move the actual confirmation logic to a new function
+  // Handle booking confirmation
   const handleConfirmBooking = async () => {
-    if (!bookingToConfirm) return
+    if (!bookingToAction) return
   
     try {
       const token = localStorage.getItem('token')
-      const response = await fetch(`/api/admin/bookings/${bookingToConfirm}`, {
+      const response = await fetch(`/api/admin/bookings/${bookingToAction}`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -140,17 +152,53 @@ export default function BookingsPage() {
       }
   
       setBookings(bookings.map(booking => 
-        booking.id === bookingToConfirm 
+        booking.id === bookingToAction 
           ? { ...booking, status: 'confirmed' }
           : booking
       ))
-      toast.success(t.toastMsg.success)
+      toast.success('Booking confirmed successfully')
     } catch (error: any) {
       console.error('Confirmation error:', error)
       toast.error(error.message || 'Failed to confirm booking')
     } finally {
-      setBookingToConfirm(null)
+      setBookingToAction(null)
+      setActionType(null)
       setIsConfirmDialogOpen(false)
+    }
+  }
+
+  // Handle booking cancellation
+  const handleCancelBooking = async () => {
+    if (!bookingToAction) return
+
+    try {
+      const token = localStorage.getItem('token')
+      const response = await fetch(`/api/admin/bookings/${bookingToAction}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ status: 'cancelled' })
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to cancel booking')
+      }
+
+      setBookings(bookings.map(booking => 
+        booking.id === bookingToAction 
+          ? { ...booking, status: 'cancelled' }
+          : booking
+      ))
+      toast.success('Booking cancelled successfully')
+    } catch (error: any) {
+      console.error('Cancellation error:', error)
+      toast.error(error.message || 'Failed to cancel booking')
+    } finally {
+      setBookingToAction(null)
+      setActionType(null)
+      setIsCancelDialogOpen(false)
     }
   }
 
@@ -230,14 +278,26 @@ export default function BookingsPage() {
         confirmText={t.delete.confirm}
         cancelText={t.delete.cancel}
       />
+      {/* Confirm Booking Dialog */}
       <ConfirmDialogAdmin
         isOpen={isConfirmDialogOpen}
         onClose={() => setIsConfirmDialogOpen(false)}
         onConfirm={handleConfirmBooking}
-        title={t.confirm.title}
-        message={t.confirm.message}
-        confirmText={t.confirm.confirm}
-        cancelText={t.confirm.cancel}
+        title="Confirm Booking"
+        message="Are you sure you want to confirm this booking? This will update the booking status and bill status."
+        confirmText="Confirm"
+        cancelText="Cancel"
+      />
+
+      {/* Cancel Booking Dialog */}
+      <ConfirmDialogAdmin
+        isOpen={isCancelDialogOpen}
+        onClose={() => setIsCancelDialogOpen(false)}
+        onConfirm={handleCancelBooking}
+        title="Cancel Booking"
+        message="Are you sure you want to cancel this booking? This will free up the seats and update the bill status."
+        confirmText="Cancel Booking"
+        cancelText="Keep Booking"
       />
 
       <div className="max-w-7xl mx-auto">
@@ -301,7 +361,7 @@ export default function BookingsPage() {
                   {/* <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider"> 
                     {t.columns.updatedAt}
                   </th> */}
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider sticky right-0 bg-gray-50 z-10">
                     {t.columns.actions}
                   </th>
                 </tr>
@@ -366,39 +426,46 @@ export default function BookingsPage() {
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {booking.updatedAt.toString()}   
                     </td> */}
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white z-10">
                       <div className="flex justify-end gap-3">
-                        {/* <button
-                          onClick={() => router.push(`/admin/bookings/${booking.id}`)}
-                          className="text-indigo-600 hover:text-indigo-900 p-1 hover:bg-indigo-50 rounded-full transition-all"
-                        >
-                          <EyeIcon className="h-5 w-5" />
-                        </button> */}
-                      {/* {booking.status === 'pending' && ( */}
-
-                          <button
-                            onClick={() => handleConfirmClick(booking.id)}
-                            className="group relative inline-flex items-center justify-center p-2 bg-green-50 hover:bg-green-100 text-green-600 hover:text-green-700 rounded-lg transition-all duration-200 cursor-pointer"
-                            disabled={booking.status === 'confirmed' || booking.status === 'cancelled'}
-                            title= {booking.status === 'confirmed' ?     
-                              t.statusAction.alreadConfiremd   : 
-                              booking.status === 'cancelled' ? t.statusAction.cancelled : 
-                              t.statusAction.confirm
-                              }
-                          >
-                            <ArrowLeftIcon className="h-5 w-5" />
-                            <span className="absolute -top-10 left-1/2 -translate-x-1/2 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap">
-                              {booking.status === 'confirmed' ?     
-                              t.statusAction.alreadConfiremd  : 
-                              booking.status === 'cancelled' ? t.statusAction.cancelled : 
-                              t.statusAction.confirm
-                              }
-                            </span>
-                          </button>
-                        {/* )} */}
+                        {booking.status === 'pending' && (
+                          <>
+                            {/* Only show confirm button for cash payments */}
+                            {booking.bill?.payments?.some(p => p.method === 'cash') && (
+                              <button
+                                onClick={() => handleConfirmClick(booking.id)}
+                                className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded-full transition-all cursor-pointer"
+                                title="Confirm Booking (Cash Payment)"
+                              >
+                                <CheckIcon className="h-5 w-5" />
+                              </button>
+                            )}
+                            {/* Show message for online payments */}
+                            {booking.bill?.payments?.some(p => p.method === 'online_payment') && !booking.bill?.payments?.some(p => p.method === 'cash') && (
+                              <span className="text-blue-600 text-xs px-2 py-1 bg-blue-50 rounded-full">
+                                Confirm via Payments
+                              </span>
+                            )}
+                            <button
+                              onClick={() => handleCancelClick(booking.id)}
+                              className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded-full transition-all cursor-pointer"
+                              title="Cancel Booking"
+                            >
+                              <XMarkIcon className="h-5 w-5" />
+                            </button>
+                          </>
+                        )}
+                        {booking.status !== 'pending' && (
+                          <span className="text-gray-400 text-sm">
+                            {booking.status === 'confirmed' ? 'Confirmed' : 
+                             booking.status === 'cancelled' ? 'Cancelled' : 
+                             booking.status === 'completed' ? 'Completed' : booking.status}
+                          </span>
+                        )}
                         <button
                           onClick={() => handleDeleteClick(booking.id)}
                           className="text-red-600 hover:text-red-900 p-1 hover:bg-red-50 rounded-full transition-all cursor-pointer"
+                          title="Delete Booking"
                         >
                           <TrashIcon className="h-5 w-5" />
                         </button>
