@@ -116,6 +116,18 @@ export const PUT = asyncHandler(async (
     }
 
     const booking = await prisma.$transaction(async (tx) => {
+      // Get booking with bill and payments to check payment method
+      const bookingWithBill = await tx.booking.findUnique({
+        where: { id },
+        include: {
+          bill: {
+            include: {
+              payments: true
+            }
+          }
+        }
+      })
+
       // Update booking status
       const updatedBooking = await tx.booking.update({
         where: { id },
@@ -143,12 +155,18 @@ export const PUT = asyncHandler(async (
               email: true,
               phone: true
             }
+          },
+          bill: {
+            include: {
+              payments: true
+            }
           }
         }
       })
 
-      // Update seat statuses based on booking status
+      // Update seat statuses and handle payments based on booking status
       if (status === 'confirmed') {
+        // Update seats to booked
         await Promise.all(
           updatedBooking.details.map(detail =>
             tx.seat.update({
@@ -157,7 +175,44 @@ export const PUT = asyncHandler(async (
             })
           )
         )
+
+        // Handle bill status and remaining payment for cash method only
+        if (bookingWithBill?.bill) {
+          // Check if there are any cash payments
+          const hasCashPayment = bookingWithBill.bill.payments.some(p => p.method === 'cash')
+          
+          if (hasCashPayment) {
+            // Calculate total paid amount
+            const totalPaid = bookingWithBill.bill.payments
+              .filter(payment => payment.status === 'successful')
+              .reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0)
+            
+            const billAmount = parseFloat(bookingWithBill.bill.amount.toString())
+            const remainingAmount = billAmount - totalPaid
+
+            // Set bill to paid (remaining amount will be collected manually)
+            await tx.bill.update({
+              where: { id: bookingWithBill.bill.id },
+              data: { status: 'paid' }
+            })
+
+            // Create a payment record for the remaining amount (cash)
+            if (remainingAmount > 0) {
+              await tx.payment.create({
+                data: {
+                  billId: bookingWithBill.bill.id,
+                  amount: remainingAmount,
+                  method: 'cash',
+                  status: 'successful', // Mark as successful since it will be collected manually
+                  transactionId: `CASH-${Date.now()}`,
+                  paidAt: new Date()
+                }
+              })
+            }
+          }
+        }
       } else if (status === 'cancelled') {
+        // Update seats to available
         await Promise.all(
           updatedBooking.details.map(detail =>
             tx.seat.update({
@@ -166,6 +221,14 @@ export const PUT = asyncHandler(async (
             })
           )
         )
+
+        // Set bill to unpaid when cancelled
+        if (bookingWithBill?.bill) {
+          await tx.bill.update({
+            where: { id: bookingWithBill.bill.id },
+            data: { status: 'unpaid' }
+          })
+        }
       }
 
       return updatedBooking
