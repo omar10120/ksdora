@@ -180,7 +180,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"amount\": 150.00,\n  \"method\": \"card\"\n}"
+              "raw": "{\n  \"method\": \"cash\",\n  \"receiptImage\": \"https://example.com/receipt.jpg\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/payments",
@@ -258,7 +258,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"amount\": 150.00,\n  \"method\": \"company_alharam\"\n}"
+              "raw": "{\n  \"amount\": 150.00,\n  \"method\": \"online_payment\"\n}"
             },
             "url": {
               "raw": "{{baseUrl}}/api/bookings/{{bookingId}}/payments",

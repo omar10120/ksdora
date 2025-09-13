@@ -202,8 +202,8 @@ async function main() {
         titleEn: 'Damascus - Aleppo Trip',
         descriptionAr: 'رحلة مريحة من دمشق إلى حلب',
         descriptionEn: 'Comfortable trip from Damascus to Aleppo',
-        longitude: 2421.23,
-        latitude: 42512.2323,
+        longitude: 36.2765,
+        latitude: 33.5138,
         imageUrls: 'https://example.com/damascus-aleppo.jpg'
       }
     }),
@@ -220,8 +220,8 @@ async function main() {
         titleEn: 'Damascus - Homs Trip',
         descriptionAr: 'رحلة سريعة من دمشق إلى حمص',
         descriptionEn: 'Quick trip from Damascus to Homs',
-        longitude: 2421.23,
-        latitude: 42512.2323,
+        longitude: 36.7139,
+        latitude: 34.7333,
         imageUrls: 'https://example.com/damascus-homs.jpg'
       }
     }),
@@ -238,8 +238,8 @@ async function main() {
         titleEn: 'Damascus - Beirut Trip',
         descriptionAr: 'رحلة دولية من دمشق إلى بيروت',
         descriptionEn: 'International trip from Damascus to Beirut',
-        longitude: 2421.23,
-        latitude: 42512.2323,
+        longitude: 35.5018,
+        latitude: 33.8938,
         imageUrls: 'https://example.com/damascus-beirut.jpg'
       }
     })
@@ -606,6 +606,7 @@ async function main() {
              amount: bill.amount,
              method: 'cash',
              status: 'successful',
+             receiptImage: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1757787538/receipts/receipt_1757787535902.jpg',
              transactionId: `TXN-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
              paidAt: new Date()
            }
@@ -616,7 +617,8 @@ async function main() {
            data: {
              billId: bill.id,
              amount: bill.amount,
-             method: 'bank_transfer',
+             receiptImage: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1757787538/receipts/receipt_1757787535902.jpg',
+             method: 'online_payment',
              status: 'pending',
              transactionId: null
            }
@@ -681,7 +683,8 @@ async function main() {
          data: {
            billId: bill5.id,
            amount: 2500.00,
-           method: 'company_alharam',
+           method: 'online_payment',
+           receiptImage: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1757787538/receipts/receipt_1757787535902.jpg',
            status: 'successful',
            transactionId: `TXN-ALHARAM-${Date.now()}`,
            paidAt: new Date()
@@ -747,7 +750,8 @@ async function main() {
          data: {
            billId: bill6.id,
            amount: 3500.00,
-           method: 'bank_transfer',
+           method: 'online_payment',
+           receiptImage: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1757787538/receipts/receipt_1757787535902.jpg',
            status: 'failed',
            transactionId: null
          }

@@ -154,7 +154,7 @@ CREATE TABLE `payments` (
     `id` VARCHAR(36) NOT NULL,
     `bill_id` VARCHAR(36) NOT NULL,
     `amount` DECIMAL(10, 2) NOT NULL,
-    `method` ENUM('cash', 'bank_transfer', 'company_alharam') NOT NULL,
+    `method` ENUM('cash', 'online_payment') NOT NULL,
     `status` ENUM('pending', 'successful', 'failed') NOT NULL DEFAULT 'pending',
     `transactionId` VARCHAR(191) NULL,
     `paid_at` DATETIME(3) NULL,

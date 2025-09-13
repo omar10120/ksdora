@@ -183,6 +183,7 @@ model Payment {
   method        PaymentMethod
   status        PaymentStatus @default(pending)
   transactionId String?       @unique
+  receiptImage  String?       @map("receipt_image") @db.VarChar(500)
   paidAt        DateTime?     @map("paid_at")
   createdAt     DateTime      @default(now()) @map("created_at")
   updatedAt     DateTime      @updatedAt @map("updated_at")
@@ -285,8 +286,7 @@ enum BillStatus {
 
 enum PaymentMethod {
   cash
-  bank_transfer
-  company_alharam
+  online_payment
 }
 
 enum PaymentStatus {

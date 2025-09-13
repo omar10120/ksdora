@@ -281,7 +281,7 @@ export const ValidationSchemas = {
   payment: {
     billId: { required: true },
     amount: { required: true, min: 0 },
-    method: { required: true, enum: ['cash', 'card', 'bank_transfer', 'company_alharam'] as string[] },
+    method: { required: true, enum: ['cash', 'online_payment'] as string[] },
     status: { required: true, enum: ['pending', 'successful', 'failed'] as string[] }
   }
 } as const
