@@ -1,15 +1,179 @@
 import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
-import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
+import { ApiResponseBuilder, SuccessMessages, StatusCodes } from '@/lib/apiResponse'
 import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 import { Decimal } from '@prisma/client/runtime/library'
 import { v2 as cloudinary } from 'cloudinary'
 import { PaymentMethod } from '@prisma/client'
-import { text } from 'stream/consumers'
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic'
+
+// Constants
+const CASH_PAYMENT_PERCENTAGE = 0.25
+const PAYMENT_SUCCESS_RATE = 0.95
+
+// Types
+interface PaymentProcessingResult {
+  success: boolean
+  transactionId?: string
+}
+
+interface PaymentResult {
+  payment: any
+  billStatus: string
+  bookingStatus: string
+  remainingBalance: number
+  message: string
+}
+
+// Helper functions
+async function uploadReceiptImage(file: File): Promise<string> {
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const base64 = buffer.toString('base64')
+  const dataURI = `data:${file.type};base64,${base64}`
+  
+  const result = await cloudinary.uploader.upload(dataURI, {
+    folder: 'receipts',
+    resource_type: 'auto',
+    public_id: `receipt_${Date.now()}`
+  })
+  
+  return result.secure_url
+}
+
+function calculatePaymentAmount(method: string, totalPrice: Decimal): Decimal {
+  if (method === 'cash') {
+    return new Decimal(parseFloat(totalPrice.toString()) * CASH_PAYMENT_PERCENTAGE)
+  }
+  return totalPrice
+}
+
+function generatePaymentMessage(method: string, paidAmount: number, totalAmount: number, remainingBalance: number): string {
+  if (method === 'cash') {
+    return `Cash payment submitted successfully! Paid ${paidAmount} (25% of ${totalAmount}). Remaining balance: ${remainingBalance}. Waiting for admin confirmation.`
+  }
+  return 'Payment submitted successfully! Waiting for admin confirmation.'
+}
+
+async function validateBookingAccess(bookingId: string, userId: string) {
+  const booking = await prisma.booking.findUnique({
+    where: { id: bookingId },
+    include: {
+      bill: {
+        include: {
+          payments: true
+        }
+      },
+      trip: {
+        include: {
+          route: {
+            include: {
+              departureCity: { include: { country: true } },
+              arrivalCity: { include: { country: true } }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  if (!booking) {
+    throw new Error('Booking not found')
+  }
+
+  if (booking.userId !== userId) {
+    throw new Error('Access denied')
+  }
+
+  if (!booking.bill) {
+    throw new Error('No bill found')
+  }
+
+  return booking
+}
+
+async function validatePaymentEligibility(booking: any) {
+  if (booking.status === 'cancelled') {
+    throw new Error('Cannot make payment for cancelled booking')
+  }
+
+  if (booking.status === 'completed') {
+    throw new Error('Cannot make payment for completed booking')
+  }
+
+  if (booking.bill.status === 'paid') {
+    throw new Error('Bill is already paid')
+  }
+
+  const existingPendingPayment = await prisma.payment.findFirst({
+    where: { 
+      billId: booking.bill.id,
+      status: 'pending'
+    }
+  })
+
+  if (existingPendingPayment) {
+    throw new Error('Payment already pending for this bill')
+  }
+}
+
+async function processPaymentTransaction(
+  booking: any, 
+  paymentAmount: Decimal, 
+  method: string, 
+  receiptImageUrl: string | null
+): Promise<PaymentResult> {
+  return await prisma.$transaction(async (tx) => {
+    // Create payment record
+    const payment = await tx.payment.create({
+      data: {
+        billId: booking.bill.id,
+        amount: paymentAmount,
+        method: method as PaymentMethod,
+        status: 'pending',
+        transactionId: null,
+        receiptImage: receiptImageUrl
+      }
+    })
+
+    // Simulate payment processing
+    const paymentResult = await processPayment(payment.amount, method)
+
+    if (paymentResult.success) {
+      // Update payment status
+      const updatedPayment = await tx.payment.update({
+        where: { id: payment.id },
+        data: {
+          status: 'pending',
+          transactionId: paymentResult.transactionId,
+          paidAt: new Date()
+        }
+      })
+      
+      const totalBillAmount = parseFloat(booking.bill.amount.toString())
+      const paidAmount = parseFloat(paymentAmount.toString())
+      const remainingBalance = totalBillAmount - paidAmount
+
+      return {
+        payment: updatedPayment,
+        billStatus: 'unpaid',
+        bookingStatus: 'pending',
+        remainingBalance,
+        message: generatePaymentMessage(method, paidAmount, totalBillAmount, remainingBalance)
+      }
+    } else {
+      // Payment failed
+      await tx.payment.update({
+        where: { id: payment.id },
+        data: { status: 'failed' }
+      })
+
+      throw ApiError.internal('Payment processing failed')
+    }
+  })
+}
 
 // POST - Process payment for a booking
 export const POST = asyncHandler(async (
@@ -50,179 +214,39 @@ export const POST = asyncHandler(async (
   let receiptImageUrl: string | null = null
   if (receiptImageFile && receiptImageFile.size > 0) {
     try {
-      const buffer = Buffer.from(await receiptImageFile.arrayBuffer())
-      const base64 = buffer.toString('base64')
-      const dataURI = `data:${receiptImageFile.type};base64,${base64}`
-      
-      const result = await cloudinary.uploader.upload(dataURI, {
-        folder: 'receipts',
-        resource_type: 'auto',
-        public_id: `receipt_${Date.now()}`
-      })
-      
-      receiptImageUrl = result.secure_url
+      receiptImageUrl = await uploadReceiptImage(receiptImageFile)
     } catch (error) {
       return ApiResponseBuilder.error('Failed to upload receipt image', StatusCodes.INTERNAL_SERVER_ERROR)
     }
   }
-  
- 
-  // Check if booking exists and belongs to user
-  const booking = await prisma.booking.findUnique({
-    where: { id: bookingId },
-    include: {
-      bill: {
-        include: {
-          payments: true
-        }
+
+  try {
+    // Validate booking access and eligibility
+    const booking = await validateBookingAccess(bookingId, userId)
+    await validatePaymentEligibility(booking)
+
+    // Calculate payment amount based on method
+    const paymentAmount = calculatePaymentAmount(method, booking.totalPrice)
+
+    // Process payment in transaction
+    const result = await processPaymentTransaction(booking, paymentAmount, method, receiptImageUrl)
+
+    return ApiResponseBuilder.success(
+      {
+        payment: result.payment,
+        billStatus: result.billStatus,
+        bookingStatus: result.bookingStatus,
+        remainingBalance: result.remainingBalance,
+        message: result.message
       },
-      trip: {
-        include: {
-          route: {
-            include: {
-              departureCity: { include: { country: true } },
-              arrivalCity: { include: { country: true } }
-            }
-          }
-        }
-      }
+      SuccessMessages.PAYMENT_SUCCESS
+    )
+  } catch (error) {
+    if (error instanceof Error) {
+      return ApiResponseBuilder.error(error.message, StatusCodes.BAD_REQUEST)
     }
-  })
-  
-  if (!booking) {
-    return ApiResponseBuilder.notFound('Booking')
+    throw error
   }
-
-  if (booking.userId !== userId) {
-    return ApiResponseBuilder.forbidden('You can only make payments for your own bookings' )
-  }
-
-  if (!booking.bill) {
-    return ApiResponseBuilder.error('No bill found for this booking', StatusCodes.BAD_REQUEST)
-  }
-
-  // Business logic validation
-  if (booking.status === 'cancelled') {
-    return ApiResponseBuilder.error('Cannot make payment for cancelled booking', StatusCodes.BAD_REQUEST)
-  }
-
-  if (booking.status === 'completed') {
-    return ApiResponseBuilder.error('Cannot make payment for completed booking', StatusCodes.BAD_REQUEST)
-  }
-
-  // Check if bill is already paid
-  if (booking.bill.status === 'paid') {
-    return ApiResponseBuilder.error('Bill is already paid', StatusCodes.BAD_REQUEST)
-  }
-  // if (booking.status === 'pending' && payment)
-  //   return ApiResponseBuilder.error('Bill is arleady pending' , StatusCodes.BAD_REQUEST)
-
-  
-
-  // Check if there's already a pending payment for this bill
-  const existingPendingPayment = await prisma.payment.findFirst({
-    where: { 
-      billId: booking.bill.id,
-      status: 'pending'
-    }
-  })
-  
-  if (existingPendingPayment) {
-    return ApiResponseBuilder.error('Payment already pending for this bill', StatusCodes.BAD_REQUEST)
-  }
-  
-
-
-
-
-
-
-  // Check if payment amount exceeds remaining balance
-  // const totalPaid = booking.bill.payments
-  //   .filter(payment => payment.status === 'successful')
-  //   .reduce((sum, payment) => sum + parseFloat(payment.amount.toString()), 0)
-  
-  // const remainingBalance = parseFloat(booking.bill.amount.toString()) - totalPaid
-
-  // if (paymentAmount > remainingBalance) {
-  //   return ApiResponseBuilder.error(
-  //     `Payment amount (${paymentAmount}) exceeds remaining balance (${remainingBalance})`,
-  //     StatusCodes.BAD_REQUEST
-  //   )
-  // }
-
-  // Calculate payment amount based on method
-  let paymentAmount: Decimal
-  if (method === 'cash') {
-    // For cash payments, only 25% of total price
-    paymentAmount = new Decimal(parseFloat(booking.totalPrice.toString()) * 0.25)
-  } else {
-    // For online payments, full amount
-    paymentAmount = booking.totalPrice
-  }
-
-  // Process payment in transaction
-  const result = await prisma.$transaction(async (tx) => {
-    // Create payment record
-    const payment = await tx.payment.create({
-      data: {
-        billId: booking.bill!.id,
-        amount: paymentAmount,
-        method: method as PaymentMethod,
-        status: 'pending',
-        transactionId: null,
-        receiptImage: receiptImageUrl
-      }
-    })
-
-    // Simulate payment processing (replace with actual payment gateway)
-    const paymentResult = await processPayment(payment.amount, method)
-
-    if (paymentResult.success) {
-      // Update payment status to pending (waiting for admin confirmation)
-      const updatedPayment = await tx.payment.update({
-        where: { id: payment.id },
-        data: {
-          status: 'pending', // Keep as pending until admin confirms
-          transactionId: paymentResult.transactionId,
-          paidAt: new Date()
-        }
-      })
-      
-      const totalBillAmount = parseFloat(booking.bill!.amount.toString())
-      const paidAmount = parseFloat(paymentAmount.toString())
-      const remainingBalance = totalBillAmount - paidAmount
-
-      return {
-        payment: updatedPayment,
-        billStatus: 'unpaid', // Bill remains unpaid until admin confirms
-        bookingStatus: 'pending', // Booking remains pending until admin confirms
-        remainingBalance: remainingBalance,
-        message: method === 'cash' 
-          ? `Cash payment submitted successfully! Paid ${paidAmount} (25% of ${totalBillAmount}). Remaining balance: ${remainingBalance}. Waiting for admin confirmation.`
-          : 'Payment submitted successfully! Waiting for admin confirmation.'
-      }
-    } else {
-      // Payment failed
-      await tx.payment.update({
-        where: { id: payment.id },
-        data: { status: 'failed' }
-      })
-
-      throw ApiError.internal('Payment processing failed')
-    }
-  })
-
-  return ApiResponseBuilder.success(
-    {
-      payment: result.payment,
-      billStatus: result.billStatus,
-      bookingStatus: result.bookingStatus,
-      remainingBalance: result.remainingBalance,
-      message: result.message
-    },
-    SuccessMessages.PAYMENT_SUCCESS
-  )
 })
 
 // GET - Retrieve payment history for a booking
@@ -308,15 +332,12 @@ export const GET = asyncHandler(async (
 })
 
 // Mock payment processing function (replace with actual payment gateway)
-async function processPayment(amount: Decimal, method: string): Promise<{
-  success: boolean
-  transactionId?: string
-}> {
+async function processPayment(amount: Decimal, method: string): Promise<PaymentProcessingResult> {
   // Simulate payment processing delay
   await new Promise(resolve => setTimeout(resolve, 1000))
 
-  // Simulate 95% success rate
-  const success = Math.random() > 0.05
+  // Simulate success rate
+  const success = Math.random() > (1 - PAYMENT_SUCCESS_RATE)
 
   return {
     success,
