@@ -58,15 +58,9 @@ export const PUT = asyncHandler(async (
 
       const billAmount = parseFloat(existingPayment.bill.amount.toString())
 
-      // Check if bill is now fully paid
-      if (totalPaid >= billAmount) {
-        // Update bill status to paid
-        await tx.bill.update({
-          where: { id: existingPayment.bill.id },
-          data: { status: 'paid' }
-        })
-
-        // Update booking status to confirmed
+      // Handle different payment methods
+      if (existingPayment.method === 'cash') {
+        // For cash payments: confirm booking but keep bill unpaid
         await tx.booking.update({
           where: { id: existingPayment.bill.booking.id },
           data: { status: 'confirmed' }
@@ -85,13 +79,42 @@ export const PUT = asyncHandler(async (
             })
           )
         )
+      } else {
+        // For online payments: check if bill is now fully paid
+        if (totalPaid >= billAmount) {
+          // Update bill status to paid
+          await tx.bill.update({
+            where: { id: existingPayment.bill.id },
+            data: { status: 'paid' }
+          })
+
+          // Update booking status to confirmed
+          await tx.booking.update({
+            where: { id: existingPayment.bill.booking.id },
+            data: { status: 'confirmed' }
+          })
+
+          // Update seat statuses to booked
+          const bookingDetails = await tx.bookingDetail.findMany({
+            where: { bookingId: existingPayment.bill.booking.id }
+          })
+
+          await Promise.all(
+            bookingDetails.map(detail =>
+              tx.seat.update({
+                where: { id: detail.seatId },
+                data: { status: 'booked' }
+              })
+            )
+          )
+        }
       }
 
       return {
         payment: updatedPayment,
-        billStatus: totalPaid >= billAmount ? 'paid' : 'unpaid',
-        bookingStatus: totalPaid >= billAmount ? 'confirmed' : existingPayment.bill.booking.status,
-        remainingBalance: Math.max(0, billAmount - totalPaid)
+        billStatus: existingPayment.method === 'cash' ? 'unpaid' : (totalPaid >= billAmount ? 'paid' : 'unpaid'),
+        bookingStatus: existingPayment.method === 'cash' ? 'confirmed' : (totalPaid >= billAmount ? 'confirmed' : existingPayment.bill.booking.status),
+        remainingBalance: existingPayment.method === 'cash' ? billAmount : Math.max(0, billAmount - totalPaid)
       }
     })
 

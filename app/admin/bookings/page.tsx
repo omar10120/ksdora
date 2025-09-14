@@ -151,11 +151,8 @@ export default function BookingsPage() {
         throw new Error(t.confirm.error)
       }
   
-      setBookings(bookings.map(booking => 
-        booking.id === bookingToAction 
-          ? { ...booking, status: 'confirmed' }
-          : booking
-      ))
+      // Refetch bookings to get updated bill status
+      await fetchBookings()
       toast.success('Booking confirmed successfully')
     } catch (error: any) {
       console.error('Confirmation error:', error)
@@ -428,14 +425,14 @@ export default function BookingsPage() {
                     </td> */}
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-white z-10">
                       <div className="flex justify-end gap-3">
-                        {booking.status === 'pending' && (
+                        {(booking.status === 'pending' || (booking.status === 'confirmed' && booking.bill?.status !== 'paid')) && (
                           <>
-                            {/* Only show confirm button for cash payments */}
+                            {/* Show confirm button for cash payments (pending or confirmed with unpaid bill) */}
                             {booking.bill?.payments?.some(p => p.method === 'cash') && (
                               <button
                                 onClick={() => handleConfirmClick(booking.id)}
                                 className="text-green-600 hover:text-green-900 p-1 hover:bg-green-50 rounded-full transition-all cursor-pointer"
-                                title="Confirm Booking (Cash Payment)"
+                                title={booking.status === 'pending' ? "Confirm Booking (Cash Payment)" : "Mark Bill as Paid"}
                               >
                                 <CheckIcon className="h-5 w-5" />
                               </button>
@@ -455,12 +452,14 @@ export default function BookingsPage() {
                             </button>
                           </>
                         )}
-                        {booking.status !== 'pending' && (
-                          <span className="text-gray-400 text-sm">
-                            {booking.status === 'confirmed' ? 'Confirmed' : 
-                             booking.status === 'cancelled' ? 'Cancelled' : 
-                             booking.status === 'completed' ? 'Completed' : booking.status}
-                          </span>
+                        {booking.status === 'confirmed' && booking.bill?.status === 'paid' && (
+                          <span className="text-green-600 text-sm font-medium">Confirmed & Paid</span>
+                        )}
+                        {booking.status === 'cancelled' && (
+                          <span className="text-gray-400 text-sm">Cancelled</span>
+                        )}
+                        {booking.status === 'completed' && (
+                          <span className="text-gray-400 text-sm">Completed</span>
                         )}
                         <button
                           onClick={() => handleDeleteClick(booking.id)}
