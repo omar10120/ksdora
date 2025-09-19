@@ -1,299 +1,138 @@
 import { NextRequest ,NextResponse} from 'next/server'
 import prisma from '@/lib/prisma'
-import { ApiResponseBuilder, SuccessMessages, ErrorMessages } from '@/lib/apiResponse'
+import { ApiResponseBuilder, SuccessMessages, ErrorMessages ,StatusCodes} from '@/lib/apiResponse'
 import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
+// GET - Fetch all trips with pagination and filters
 export const GET = asyncHandler(async (request: NextRequest) => {
-  const { searchParams } = new URL(request.url)
-  const from = searchParams.get('from')
-  const to = searchParams.get('to')
-  const date = searchParams.get('date')
-  const passengers = parseInt(searchParams.get('passengers') || '1')
+  try {
+    const { searchParams } = new URL(request.url)
+    const page = parseInt(searchParams.get('page') || '1')
+    const limit = parseInt(searchParams.get('limit') || '10')
+    const status = searchParams.get('status')
+    const routeId = searchParams.get('routeId')
+    const busId = searchParams.get('busId')
+    const departureDate = searchParams.get('departureDate')
 
-  const page = parseInt(searchParams.get('page') || '1')
-  const limit = parseInt(searchParams.get('limit') || '10')
-  const skip = (page - 1) * limit
-
-  // Validate search parameters
-  const validationResult = validateRequest(
-    { from, to, date, passengers, page, limit },
-    {
-      from: { required: false, type: 'string', minLength: 2 },
-      to: { required: false, type: 'string', minLength: 2 },
-      date: { 
-        required: false, 
-        custom: (value: any) => {
-          if (!value) return true
-          const dateObj = new Date(value)
-          if (isNaN(dateObj.getTime())) return 'Invalid date format'
-          if (dateObj < new Date()) return 'Date cannot be in the past'
-          return true
-        }
-      },
-      passengers: { required: false, min: 1, max: 10 },
-      page: { required: false, min: 1 },
-      limit: { required: false, min: 1, max: 50 }
-    }
-  )
-
-  if (!validationResult.isValid) {
-    return createValidationResponse(validationResult)
-  }
-
-  // Build search query
-  const where: any = {
-    status: 'scheduled',
-    departureTime: {
-      gte: new Date() // Only show future trips
-    }
-  }
-
-  // Add city filters
-  if (from || to) {
-    where.route = {}
-    if (from) {
-      where.route.departureCity = { 
-        OR: [
-          { name: { contains: from, mode: 'insensitive' } },
-          { nameAr: { contains: from, mode: 'insensitive' } }
-        ]
-      }
-    }
-    if (to) {
-      where.route.arrivalCity = { 
-        OR: [
-          { name: { contains: to, mode: 'insensitive' } },
-          { nameAr: { contains: to, mode: 'insensitive' } }
-        ]
-      }
-    }
-  }
-
-  // Add date filter
-  if (date) {
-    const searchDate = new Date(date)
-    const nextDay = new Date(searchDate)
-    nextDay.setDate(nextDay.getDate() + 1)
+    // Calculate pagination
+    const skip = (page - 1) * limit
     
-    where.departureTime = {
-      gte: searchDate,
-      lt: nextDay
+    // Build where clause
+    const where: any = {}
+    if (status) {
+      where.status = status
     }
-  }
+    if (routeId) {
+      where.routeId = routeId
+    }
+    if (busId) {
+      where.busId = busId
+    }
+    if (departureDate) {
+      const startDate = new Date(departureDate)
+      const endDate = new Date(startDate)
+      endDate.setDate(endDate.getDate() + 1)
+      where.departureTime = {
+        gte: startDate,
+        lt: endDate
+      }
+    }
 
-  // Get trips with available seats
-  const trips = await prisma.trip.findMany({
-    skip,
-    take: limit,
-    where,
-    include: {
-      route: {
+    // Single optimized query with count and data
+    const [trips, total] = await Promise.all([
+      prisma.trip.findMany({
+        where,
+        orderBy: {
+          departureTime: 'desc'
+        },
         include: {
-          departureCity: {
-            include: { country: true }
+          route: {
+            include: {
+              departureCity: {
+                include: { country: true }
+              },
+              arrivalCity: {
+                include: { country: true }
+              }
+            }
           },
-          arrivalCity: {
-            include: { country: true }
+          bus: {
+            select: {
+              id: true,
+              plateNumber: true,
+              model: true,
+              capacity: true,
+              status: true
+            }
+          },
+        seats: {
+          select: {
+            status: true
           }
-        }
-      },
-      bus: {
-        select: {
-          id: true,
-          plateNumber: true,
-          model: true,
-          capacity: true
-        }
-      },
-      seats: {
-        where: { status: 'available' },
-        select: { 
-          id: true, 
-          seatNumber: true,
-          status: true 
-        }
-      },
-      bookings: {
-        where: { status: { in: ['confirmed', 'pending'] } },
-        select: { id: true }
-      }
-    },
-    orderBy: {
-      departureTime: 'asc'
-    }
-  })
-
-  // Filter trips with enough available seats
-  const availableTrips = trips.filter(trip => trip.seats.length >= passengers)
-
-  if (availableTrips.length === 0) {
-    return ApiResponseBuilder.warning(
-      'No trips found matching your search criteria',
-      {
-        searchCriteria: { from, to, date, passengers },
-        suggestion: 'Try adjusting your search parameters or check back later for new trips'
-      }
-    )
-  }
-
-  // Format trip data
-  const tripsData = availableTrips.map(trip => {
-    const { seats, imageUrls, ...tripData } = trip
-    return {
-      ...tripData,
-      imageUrls: typeof imageUrls === 'string' ? JSON.parse(imageUrls) : imageUrls,
-      availableSeats: seats.length,
-      totalSeats: trip.bus.capacity,
-      occupancyRate: Math.round(((trip.bus.capacity - seats.length) / trip.bus.capacity) * 100),
-      route: {
-        from: {
-          city: trip.route.departureCity.name,
-          cityAr: trip.route.departureCity.nameAr,
-          country: trip.route.departureCity.country.name,
-          countryAr: trip.route.departureCity.country.nameAr
         },
-        to: {
-          city: trip.route.arrivalCity.name,
-          cityAr: trip.route.arrivalCity.nameAr,
-          country: trip.route.arrivalCity.country.name,
-          countryAr: trip.route.arrivalCity.country.nameAr
+          bookings: {
+            select: {
+              id: true,
+              status: true,
+              totalPrice: true
+            }
+          }
         },
-        distance: trip.route.distance
-      },
-      bus: {
-        id: trip.bus.id,
-        plateNumber: trip.bus.plateNumber,
-        model: trip.bus.model,
-        capacity: trip.bus.capacity
+        skip,
+        take: limit
+      }),
+      prisma.trip.count({ where })
+    ])
+
+    // Process trips to add seat summary statistics
+    const processedTrips = trips.map(trip => {
+      const { seats, ...tripData } = trip
+      
+      // Calculate seat counts by status
+      const seatCounts = seats.reduce((acc, seat) => {
+        const status = seat.status || 'available'
+        acc[status] = (acc[status] || 0) + 1
+        return acc
+      }, {} as Record<string, number>)
+      
+      // Calculate totals
+      const totalSeats = trip.bus.capacity
+      const bookedSeats = seatCounts.booked || 0
+      const availableSeats = seatCounts.available || 0
+      const reservedSeats = seatCounts.reserved || 0
+      const blockedSeats = seatCounts.blocked || 0
+      
+      return {
+        ...tripData,
+        seatSummary: {
+          total: totalSeats,
+          booked: bookedSeats,
+          available: availableSeats,
+          reserved: reservedSeats,
+          blocked: blockedSeats,
+          occupancyRate: Math.round((bookedSeats / totalSeats) * 100)
+        }
       }
+    })
+
+    // Calculate pagination metadata
+    const totalPages = Math.ceil(total / limit)
+    const pagination = {
+      page,
+      limit,
+      total,
+      totalPages,
+      hasNext: page < totalPages,
+      hasPrev: page > 1
     }
-  })
 
-  // Get total count for pagination
-  const total = await prisma.trip.count({ where })
-
-  const pagination = {
-    page,
-    limit,
-    total,
-    totalPages: Math.ceil(total / limit),
-    hasNext: page < Math.ceil(total / limit),
-    hasPrev: page > 1
+    return ApiResponseBuilder.paginated(processedTrips, pagination, SuccessMessages.RETRIEVED)
+  } catch (error) {
+    throw ApiError.database('Failed to fetch trips')
   }
-
-  return ApiResponseBuilder.paginated(
-    tripsData,
-    pagination,
-    `${tripsData.length} trips found matching your search`
-  )
 })
 
-//Get MyTrips id 
-
-
-// export async function GET(req: Request) {
-  //   try {
-//     const { searchParams } = new URL(req.url);
-//     const from = searchParams.get('from');
-//     const to = searchParams.get('to');
-//     const date = searchParams.get('date');
-
-//     const page = parseInt(searchParams.get('page') || '1');
-//     const limit = parseInt(searchParams.get('limit') || '10');
-//     const limitSeat = parseInt(searchParams.get('limitSeat') || '1000');
-//     const skip = (page - 1) * limit;
-
-//     const trips = await prisma.trip.findMany({
-//       skip,
-//       take: limit,
-//       where: {
-//         status: 'scheduled',
-//         AND: [
-//           {
-//             route: {
-//               departureCity: from ? {
-//                 name: { contains: from }
-//               } : undefined,
-//               arrivalCity: to ? {
-//                 name: { contains: to }
-//               } : undefined
-//             }
-//           },
-//           date ? {
-//             departureTime: {
-//               gte: new Date(date),
-//               lt: new Date(new Date(date).setDate(new Date(date).getDate() + 1))
-//             }
-//           } : {}
-//         ]
-//       },
-//       include: {
-//         route: {
-//           include: {
-//             departureCity: true,
-//             arrivalCity: true
-//           }
-//         },
-//         seats: {
-//           where: {
-//             status: 'available'
-//           }
-//         }
-//       }
-//     });
-
-//     if (!trips || trips.length === 0) {
-//       return NextResponse.json({ error: 'No trips found' }, { status: 404 });
-//     }
-
-//     const tripsWithFilteredSeats = trips.map(trip => ({
-//       ...trip,
-//       imageUrls: typeof trip.imageUrls === 'string' ? JSON.parse(trip.imageUrls) : trip.imageUrls,
-//       seats: trip.seats,
-//       totalAvailableSeats: trip.seats.length
-//     }));
-
-//     const total = await prisma.trip.count({
-//       where: {
-//         status: 'scheduled',
-//         AND: [
-//           {
-//             route: {
-//               departureCity: from ? {
-//                 name: { contains: from }
-//               } : undefined,
-//               arrivalCity: to ? {
-//                 name: { contains: to }
-//               } : undefined
-//             }
-//           },
-//           date ? {
-//             departureTime: {
-//               gte: new Date(date),
-//               lt: new Date(new Date(date).setDate(new Date(date).getDate() + 1))
-//             }
-//           } : {}
-//         ]
-//       }
-//     });
-
-//     return NextResponse.json({
-//       trips: tripsWithFilteredSeats,
-//       pagination: {
-//         total,
-//         page,
-//         limit,
-//         totalPages: Math.ceil(total / limit),
-//         limitSeat
-//       }
-//     });
-
-//   } catch (error) {
-//     console.error('Get trips error:', error);
-//     return NextResponse.json({ error: 'Internal server error trips' }, { status: 500 });
-//   }
-// }
 
 
 // Create new trip
@@ -366,34 +205,61 @@ export const POST = asyncHandler(async (request: NextRequest) => {
   if (lastBookingDate >= departureDate) {
     return ApiResponseBuilder.error(
       'Last booking time must be before departure time',
-      400
+      StatusCodes.BAD_REQUEST
     )
   }
 
   if (arrivalDate <= departureDate) {
     return ApiResponseBuilder.error(
       'Arrival time must be after departure time',
-      400
+      StatusCodes.BAD_REQUEST
     )
   }
 
-  // Check if route exists
-  const route = await prisma.route.findUnique({
-    where: { id: routeId },
-    include: {
-      departureCity: { include: { country: true } },
-      arrivalCity: { include: { country: true } }
-    }
-  })
+  // Parallel validation queries - 3 calls instead of sequential
+  const [route, bus, conflictingTrip] = await Promise.all([
+    prisma.route.findUnique({
+      where: { id: routeId },
+      include: {
+        departureCity: { include: { country: true } },
+        arrivalCity: { include: { country: true } }
+      }
+    }),
+    prisma.bus.findUnique({
+      where: { id: busId }
+    }),
+    prisma.trip.findFirst({
+      where: {
+        busId,
+        status: { in: ['scheduled', 'in_progress'] },
+        OR: [
+          {
+            AND: [
+              { departureTime: { lte: departureDate } },
+              { arrivalTime: { gte: departureDate } }
+            ]
+          },
+          {
+            AND: [
+              { departureTime: { lte: arrivalDate } },
+              { arrivalTime: { gte: arrivalDate } }
+            ]
+          },
+          {
+            AND: [
+              { departureTime: { gte: departureDate } },
+              { arrivalTime: { lte: arrivalDate } }
+            ]
+          }
+        ]
+      }
+    })
+  ])
 
+  // Validate results
   if (!route) {
     return ApiResponseBuilder.notFound('Route')
   }
-
-  // Check if bus exists and is available
-  const bus = await prisma.bus.findUnique({
-    where: { id: busId }
-  })
 
   if (!bus) {
     return ApiResponseBuilder.notFound('Bus')
@@ -402,37 +268,9 @@ export const POST = asyncHandler(async (request: NextRequest) => {
   if (bus.status !== 'active') {
     return ApiResponseBuilder.error(
       'Bus is not available for scheduling',
-      400
+      StatusCodes.BAD_REQUEST
     )
   }
-
-  // Check for bus availability conflicts
-  const conflictingTrip = await prisma.trip.findFirst({
-    where: {
-      busId,
-      status: { in: ['scheduled', 'in_progress'] },
-      OR: [
-        {
-          AND: [
-            { departureTime: { lte: departureDate } },
-            { arrivalTime: { gte: departureDate } }
-          ]
-        },
-        {
-          AND: [
-            { departureTime: { lte: arrivalDate } },
-            { arrivalTime: { gte: arrivalDate } }
-          ]
-        },
-        {
-          AND: [
-            { departureTime: { gte: departureDate } },
-            { arrivalTime: { lte: arrivalDate } }
-          ]
-        }
-      ]
-    }
-  })
 
   if (conflictingTrip) {
     return ApiResponseBuilder.conflict(
@@ -520,8 +358,6 @@ export const POST = asyncHandler(async (request: NextRequest) => {
   )
 }) 
 
-
-//Get MyTrips id 
 
 
 
