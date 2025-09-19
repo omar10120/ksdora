@@ -101,6 +101,9 @@ model Trip {
 
   @@index([busId], map: "bus_id")
   @@index([routeId], map: "route_id")
+  @@index([status], map: "status_idx")
+  @@index([departureTime], map: "departure_time_idx")
+  @@index([status, departureTime], map: "status_departure_idx")
   @@map("trips")
 }
 
@@ -113,6 +116,8 @@ model Seat {
   trip           Trip            @relation(fields: [tripId], references: [id], onUpdate: Restrict, map: "seats_ibfk_1")
 
   @@index([tripId], map: "trip_id")
+  @@index([status], map: "seat_status_idx")
+  @@index([tripId, status], map: "trip_status_idx")
   @@map("seats")
 }
 

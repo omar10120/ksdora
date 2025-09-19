@@ -4,6 +4,10 @@ import { ApiResponseBuilder, SuccessMessages, ErrorMessages ,StatusCodes} from '
 import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
+// Simple in-memory cache for trips data
+const cache = new Map<string, { data: any, timestamp: number }>()
+const CACHE_TTL = 30000 // 30 seconds cache
+
 // GET - Fetch all trips with pagination and filters
 export const GET = asyncHandler(async (request: NextRequest) => {
   try {
@@ -14,6 +18,15 @@ export const GET = asyncHandler(async (request: NextRequest) => {
     const routeId = searchParams.get('routeId')
     const busId = searchParams.get('busId')
     const departureDate = searchParams.get('departureDate')
+
+    // Create cache key
+    const cacheKey = `trips:${page}:${limit}:${status || 'all'}:${routeId || 'all'}:${busId || 'all'}:${departureDate || 'all'}`
+    
+    // Check cache first
+    const cached = cache.get(cacheKey)
+    if (cached && (Date.now() - cached.timestamp) < CACHE_TTL) {
+      return cached.data
+    }
 
     // Calculate pagination
     const skip = (page - 1) * limit
@@ -39,7 +52,7 @@ export const GET = asyncHandler(async (request: NextRequest) => {
       }
     }
 
-    // Single optimized query with count and data
+    // Optimized query with SQL aggregation for seat counts
     const [trips, total] = await Promise.all([
       prisma.trip.findMany({
         where,
@@ -66,11 +79,6 @@ export const GET = asyncHandler(async (request: NextRequest) => {
               status: true
             }
           },
-        seats: {
-          select: {
-            status: true
-          }
-        },
           bookings: {
             select: {
               id: true,
@@ -85,33 +93,62 @@ export const GET = asyncHandler(async (request: NextRequest) => {
       prisma.trip.count({ where })
     ])
 
-    // Process trips to add seat summary statistics
+    // Get seat counts using raw SQL for better performance
+    const tripIds = trips.map(trip => trip.id)
+    const seatCounts = tripIds.length > 0 ? await prisma.$queryRaw`
+      SELECT 
+        trip_id,
+        COUNT(*) as total,
+        SUM(CASE WHEN status = 'booked' THEN 1 ELSE 0 END) as booked,
+        SUM(CASE WHEN status = 'available' THEN 1 ELSE 0 END) as available,
+        SUM(CASE WHEN status = 'reserved' THEN 1 ELSE 0 END) as reserved,
+        SUM(CASE WHEN status = 'blocked' THEN 1 ELSE 0 END) as blocked
+      FROM seats 
+      WHERE trip_id IN (${tripIds.join("','")})
+      GROUP BY trip_id
+    ` as Array<{
+      trip_id: string
+      total: bigint
+      booked: bigint
+      available: bigint
+      reserved: bigint
+      blocked: bigint
+    }> : []
+
+    // Create seat counts lookup map
+    const seatCountsMap = seatCounts.reduce((acc, count) => {
+      acc[count.trip_id] = {
+        total: Number(count.total),
+        booked: Number(count.booked),
+        available: Number(count.available),
+        reserved: Number(count.reserved),
+        blocked: Number(count.blocked)
+      }
+      return acc
+    }, {} as Record<string, any>)
+
+    // Process trips with optimized seat summary
     const processedTrips = trips.map(trip => {
-      const { seats, ...tripData } = trip
+      const seatCounts = seatCountsMap[trip.id] || {
+        total: 0,
+        booked: 0,
+        available: 0,
+        reserved: 0,
+        blocked: 0
+      }
       
-      // Calculate seat counts by status
-      const seatCounts = seats.reduce((acc, seat) => {
-        const status = seat.status || 'available'
-        acc[status] = (acc[status] || 0) + 1
-        return acc
-      }, {} as Record<string, number>)
-      
-      // Calculate totals
       const totalSeats = trip.bus.capacity
-      const bookedSeats = seatCounts.booked || 0
-      const availableSeats = seatCounts.available || 0
-      const reservedSeats = seatCounts.reserved || 0
-      const blockedSeats = seatCounts.blocked || 0
+      const occupancyRate = totalSeats > 0 ? Math.round((seatCounts.booked / totalSeats) * 100) : 0
       
       return {
-        ...tripData,
+        ...trip,
         seatSummary: {
           total: totalSeats,
-          booked: bookedSeats,
-          available: availableSeats,
-          reserved: reservedSeats,
-          blocked: blockedSeats,
-          occupancyRate: Math.round((bookedSeats / totalSeats) * 100)
+          booked: seatCounts.booked,
+          available: seatCounts.available,
+          reserved: seatCounts.reserved,
+          blocked: seatCounts.blocked,
+          occupancyRate
         }
       }
     })
@@ -127,7 +164,23 @@ export const GET = asyncHandler(async (request: NextRequest) => {
       hasPrev: page > 1
     }
 
-    return ApiResponseBuilder.paginated(processedTrips, pagination, SuccessMessages.RETRIEVED)
+    const response = ApiResponseBuilder.paginated(processedTrips, pagination, SuccessMessages.RETRIEVED)
+    
+    // Cache the response
+    cache.set(cacheKey, { data: response, timestamp: Date.now() })
+    
+    // Clean old cache entries (simple cleanup)
+    if (cache.size > 100) {
+      const now = Date.now()
+      const entries = Array.from(cache.entries())
+      for (const [key, value] of entries) {
+        if (now - value.timestamp > CACHE_TTL) {
+          cache.delete(key)
+        }
+      }
+    }
+    
+    return response
   } catch (error) {
     throw ApiError.database('Failed to fetch trips')
   }
