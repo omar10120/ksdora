@@ -7,7 +7,7 @@ export async function middleware(request: NextRequest) {
   const authHeader = request.headers.get('Authorization')
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return NextResponse.json({ error: 'Authentication required ' }, { status: 401 })
+    return NextResponse.json({ error: 'Authentication required ' }, { status: StatusCodes.UNAUTHORIZED })
   }
 
   const token = authHeader.split(' ')[1]
@@ -20,7 +20,7 @@ export async function middleware(request: NextRequest) {
 
     // Check for admin routes and role
     if (request.nextUrl.pathname.startsWith('/api/admin') && role !== 'ADMIN') {
-      return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
+      return NextResponse.json({ error: 'Admin access required' }, { status: StatusCodes.FORBIDDEN })
     }
 
     
@@ -37,7 +37,7 @@ export async function middleware(request: NextRequest) {
   } catch (error) {
     
 
-    // return NextResponse.json(ApiResponseBuilder.error('Invalid token'), { status: 401 })
+    
     return ApiResponseBuilder.unauthorized(
       ErrorMessages.INVALID_TOKEN
     )

@@ -225,12 +225,8 @@ export default function TripsPage() {
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t.columns.descriptionEn}
               </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.latitude}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.longitude}
-              </th>
+             
+
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 
                 {t.columns.imageurl}
@@ -287,12 +283,7 @@ export default function TripsPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.descriptionEn}
                 </td> 
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.latitude}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.longitude}
-                </td>
+                
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                   {(() => {
                     // Handle both array and single string cases
