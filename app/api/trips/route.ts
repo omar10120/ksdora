@@ -331,84 +331,88 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     )
   }
 
-  // Create trip with seats
-  const trip = await prisma.$transaction(async (tx) => {
-    // Create the trip
-    const newTrip = await tx.trip.create({
-      data: {
-        routeId,
-        busId,
-        departureTime: departureDate,
-        arrivalTime: arrivalDate,
-        lastBookingTime: lastBookingDate,
-        price,
-        status: 'scheduled',
-        longitude,
-        latitude,
-        titleAr,
-        titleEn,
-        descriptionAr,
-        descriptionEn,
-        imageUrls: imageUrls ? JSON.stringify(imageUrls) : null,
-        createdAt: new Date(),
-        
-      },
-      include: {
-        route: {
+  try{
+        // Create trip with seats
+      const trip = await prisma.$transaction(async (tx) => {
+        // Create the trip
+        const newTrip = await tx.trip.create({
+          data: {
+            routeId,
+            busId,
+            departureTime: departureDate,
+            arrivalTime: arrivalDate,
+            lastBookingTime: lastBookingDate,
+            price,
+            status: 'scheduled',
+            longitude,
+            latitude,
+            titleAr,
+            titleEn,
+            descriptionAr,
+            descriptionEn,
+            imageUrls: imageUrls ? JSON.stringify(imageUrls) : null,
+            createdAt: new Date(),
+            
+          },
           include: {
-            departureCity: { include: { country: true } },
-            arrivalCity: { include: { country: true } }
+            route: {
+              include: {
+                departureCity: { include: { country: true } },
+                arrivalCity: { include: { country: true } }
+              }
+            },
+            bus: true
+          }
+        })
+
+        // Create seats for the trip
+        const seatPromises = Array.from({ length: bus.capacity }, (_, i) => {
+          return tx.seat.create({
+            data: {
+              tripId: newTrip.id,
+              seatNumber: `${String.fromCharCode(65 + Math.floor(i / 4))}${(i % 4) + 1}`,
+              status: 'available'
+            }
+          })
+        })
+
+        await Promise.all(seatPromises)
+
+        return newTrip
+      })
+
+      return ApiResponseBuilder.created(
+        {
+          ...trip,
+          imageUrls: trip.imageUrls ? JSON.parse(trip.imageUrls) : null,
+          route: {
+            from: {
+              city: trip.route.departureCity.name,
+              cityAr: trip.route.departureCity.nameAr,
+              country: trip.route.departureCity.country.name,
+              countryAr: trip.route.departureCity.country.nameAr
+            },
+            to: {
+              city: trip.route.arrivalCity.name,
+              cityAr: trip.route.arrivalCity.nameAr,
+              country: trip.route.arrivalCity.country.name,
+              countryAr: trip.route.arrivalCity.country.nameAr
+            },
+            distance: trip.route.distance
+          },
+          bus: {
+            id: trip.bus.id,
+            plateNumber: trip.bus.plateNumber,
+            model: trip.bus.model,
+            capacity: trip.bus.capacity,
+            status: trip.bus.status
           }
         },
-        bus: true
-      }
-    })
-
-    // Create seats for the trip
-    const seatPromises = Array.from({ length: bus.capacity }, (_, i) => {
-      return tx.seat.create({
-        data: {
-          tripId: newTrip.id,
-          seatNumber: `${String.fromCharCode(65 + Math.floor(i / 4))}${(i % 4) + 1}`,
-          status: 'available'
-        }
-      })
-    })
-
-    await Promise.all(seatPromises)
-
-    return newTrip
-  })
-
-  return ApiResponseBuilder.created(
-    {
-      ...trip,
-      imageUrls: trip.imageUrls ? JSON.parse(trip.imageUrls) : null,
-      route: {
-        from: {
-          city: trip.route.departureCity.name,
-          cityAr: trip.route.departureCity.nameAr,
-          country: trip.route.departureCity.country.name,
-          countryAr: trip.route.departureCity.country.nameAr
-        },
-        to: {
-          city: trip.route.arrivalCity.name,
-          cityAr: trip.route.arrivalCity.nameAr,
-          country: trip.route.arrivalCity.country.name,
-          countryAr: trip.route.arrivalCity.country.nameAr
-        },
-        distance: trip.route.distance
-      },
-      bus: {
-        id: trip.bus.id,
-        plateNumber: trip.bus.plateNumber,
-        model: trip.bus.model,
-        capacity: trip.bus.capacity,
-        status: trip.bus.status
-      }
-    },
-    SuccessMessages.TRIP_SCHEDULED
-  )
+        SuccessMessages.TRIP_SCHEDULED
+      )
+  }catch(error){
+    throw ApiError.database('Failed to create trip')
+  }
 }) 
 
 
