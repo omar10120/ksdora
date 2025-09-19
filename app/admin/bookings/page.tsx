@@ -307,10 +307,11 @@ export default function BookingsPage() {
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
              <button
+              disabled={loading}
               onClick={() => setRefresh(!refresh)}
               className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
             >
-              <span> refresh</span>
+              <span> <ArrowPathIcon className="h-5 w-5" /></span>
               </button>
             <div className="relative w-full sm:w-64">
               <input

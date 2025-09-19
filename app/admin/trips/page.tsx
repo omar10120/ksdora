@@ -7,7 +7,9 @@ import {
   TrashIcon, 
   PlusIcon,
   MagnifyingGlassIcon,
-  PhotoIcon
+  PhotoIcon,
+  ArrowDownCircleIcon,
+  ArrowPathIcon
 } from '@heroicons/react/24/outline'
 import { useLanguage } from '@/context/LanguageContext'
 import ImageDialog from '@/components/admin/ImageDialog'
@@ -49,11 +51,12 @@ export default function TripsPage() {
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
   const router = useRouter()
   const token = localStorage.getItem('token')
+  const [refresh, setRefresh] = useState(false)
   useEffect(() => {
     
     fetchTrips()
     
-  }, [])
+  }, [refresh])
 
   const fetchTrips = async () => {
     try {
@@ -163,6 +166,14 @@ export default function TripsPage() {
       <div className="flex justify-between max-sm:flex-col items-center mb-6 text-black  ">
         <h1 className="text-2xl font-semibold text-gray-800 max-sm:w-full">{t.title}</h1>
         <div className="flex items-center space-x-4">
+        <button
+              onClick={() => setRefresh(!refresh)}
+              disabled={loadingProgress}
+              className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span> <ArrowPathIcon className="h-5 w-5" /></span>
+              </button>
+          
           <div className="relative">
             <input
               type="text"

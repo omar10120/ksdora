@@ -3,12 +3,11 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast, { Toaster } from 'react-hot-toast'
 import { 
-  PencilIcon, 
-  TrashIcon, 
   PlusIcon,
   MagnifyingGlassIcon 
 } from '@heroicons/react/24/outline'
 import ConfirmDialogAdmin from '@/components/ConfirmDialogAdmin'
+import BusCard from '@/components/admin/BusCard'
 import { useLanguage } from '@/context/LanguageContext'
 
 interface Bus {
@@ -29,18 +28,6 @@ export default function BusesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [busToDelete, setBusToDelete] = useState<string | null>(null)
 
-  const getStatusColor = (status: Bus['status']) => {
-    switch (status) {
-      case 'active': return 'bg-green-100 text-green-800'
-      case 'maintenance': return 'bg-yellow-100 text-yellow-800'
-      case 'inactive': return 'bg-red-100 text-red-800'
-      case 'passenger_filling': return 'bg-blue-100 text-blue-800'
-      case 'in_trip': return 'bg-purple-100 text-purple-800'
-      default: return 'bg-gray-100 text-gray-800'
-
-      
-    }
-  }
   if (!Array.isArray(buses)) return null
 
   const filteredBuses = buses.filter(bus => 
@@ -151,63 +138,114 @@ export default function BusesPage() {
         </div>
       </div>
 
-      <div className="bg-white shadow-md rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200" dir="ltr">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.plateNumber}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.model}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.capacity}
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.status}
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                {t.columns.actions}
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {filteredBuses.map((bus) => (
-              <tr key={bus.id} className="hover:bg-gray-50">
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {bus.plateNumber}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {bus.model}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {bus.capacity}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap">
-                  <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(bus.status)}`}>
-                    {t.status[bus.status]}
-                  </span>
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                  <button
-                    onClick={() => router.push(`/admin/buses/${bus.id}/edit`)}
-                    className="text-indigo-600 hover:text-indigo-900 cursor-pointer"
-                  >
-                    <PencilIcon className="h-5 w-5" />
-                  </button>
-                  <button
-                    onClick={() => handleDeleteClick(bus.id)}
-                    className="text-red-600 hover:text-red-900 ml-4 cursor-pointer"
-                  >
-                    <TrashIcon className="h-5 w-5" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      {/* Loading State */}
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          {[...Array(8)].map((_, i) => (
+            <div key={i} className="bg-white rounded-xl shadow-lg border border-gray-100 overflow-hidden animate-pulse">
+              <div className="bg-gradient-to-r from-gray-300 to-gray-400 h-24"></div>
+              <div className="p-6 space-y-4">
+                <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+                <div className="h-8 bg-gray-200 rounded"></div>
+                <div className="flex space-x-2">
+                  <div className="h-10 bg-gray-200 rounded flex-1"></div>
+                  <div className="h-10 bg-gray-200 rounded flex-1"></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {/* Stats Summary */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <span className="text-2xl">🚌</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Total Buses</p>
+                  <p className="text-2xl font-semibold text-gray-900">{buses.length}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center">
+                <div className="p-3 bg-green-100 rounded-lg">
+                  <span className="text-2xl">🟢</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Active</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {buses.filter(bus => bus.status === 'active').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center">
+                <div className="p-3 bg-yellow-100 rounded-lg">
+                  <span className="text-2xl">🔧</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Maintenance</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {buses.filter(bus => bus.status === 'maintenance').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+              <div className="flex items-center">
+                <div className="p-3 bg-blue-100 rounded-lg">
+                  <span className="text-2xl">👥</span>
+                </div>
+                <div className="ml-4">
+                  <p className="text-sm text-gray-500">Total Capacity</p>
+                  <p className="text-2xl font-semibold text-gray-900">
+                    {buses.reduce((sum, bus) => sum + bus.capacity, 0)}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Bus Cards Grid */}
+          {filteredBuses.length === 0 ? (
+            <div className="text-center py-12">
+              <div className="text-6xl mb-4">🚌</div>
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No buses found</h3>
+              <p className="text-gray-500 mb-6">
+                {searchTerm ? 'Try adjusting your search terms' : 'Get started by adding your first bus'}
+              </p>
+              {!searchTerm && (
+                <button
+                  onClick={() => router.push('/admin/buses/new')}
+                  className="inline-flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <PlusIcon className="h-5 w-5" />
+                  <span>Add First Bus</span>
+                </button>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {filteredBuses.map((bus) => (
+                <BusCard
+                  key={bus.id}
+                  bus={bus}
+                  onDeleteClick={handleDeleteClick}
+                />
+              ))}
+            </div>
+          )}
+        </>
+      )}
     </div>
   )
 }
