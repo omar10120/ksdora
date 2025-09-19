@@ -11,13 +11,13 @@ import {
 import { useLanguage } from '@/context/LanguageContext'
 
 interface Trip {
-  titleAr:string,
-  titleEn:string,
-  descriptionAr:string,
-  descriptionEn:string,
-  latitude:string,
-  longitude:string,
-  imageUrls:string,
+  titleAr: string,
+  titleEn: string,
+  descriptionAr: string,
+  descriptionEn: string,
+  latitude: string,
+  longitude: string,
+  imageUrls: string[] | string | null,
   id: string
   routeId: string
   busId: string
@@ -44,7 +44,7 @@ export default function TripsPage() {
   const [loadingProgress, setLoadingProgress] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')  
   const router = useRouter()
-
+  const token = localStorage.getItem('token')
   useEffect(() => {
     
     fetchTrips()
@@ -53,17 +53,24 @@ export default function TripsPage() {
 
   const fetchTrips = async () => {
     try {
-      const token = localStorage.getItem('token')
+      
       const response = await fetch(`/api/admin/trips`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
       })
+      
+      if (!response.ok) {
+        console.log(response);
+        throw new Error(response.statusText)
+      }
+      
       const data = await response.json()
-      setTrips(data.data)
-      console.log(data)
+      console.log('Trips data:', data)
+      setTrips(data.data || [])
     } catch (error) {
       console.error('Error fetching trips:', error)
+      setTrips([])
     } finally {
       setLoading(false)
     }
@@ -108,7 +115,9 @@ export default function TripsPage() {
   const filteredTrips = trips.filter(trip => 
     trip.route.departureCity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     trip.route.arrivalCity.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    trip.bus.plateNumber.toLowerCase().includes(searchTerm.toLowerCase())
+    trip.bus.plateNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    trip.titleAr.toLowerCase().includes(searchTerm.toLowerCase())  || 
+    trip.titleEn.toLowerCase().includes(searchTerm.toLowerCase())   
   )
 
   if (loading) {
@@ -248,19 +257,49 @@ export default function TripsPage() {
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.latitude}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                  {trip.longitude}
-                </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.descriptionAr}
                 </td> 
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                     {trip.descriptionEn}
                 </td> 
-                <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px] flex overflow-x-scroll">
-                  {trip.imageUrls}
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {trip.latitude}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  {trip.longitude}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px]">
+                  {(() => {
+                    // Handle both array and single string cases
+                    let imageUrls = trip.imageUrls
+                    
+                    // If it's a string, convert to array
+                    if (typeof imageUrls === 'string') {
+                      imageUrls = [imageUrls]
+                    }
+                    
+                    // If it's null or empty array, show no images
+                    if (!imageUrls || imageUrls.length === 0) {
+                      return <span className="text-gray-400">No images</span>
+                    }
+                    
+                    // Display images
+                    return (
+                      <div className="flex flex-wrap gap-2">
+                        {imageUrls.map((url, index) => (
+                          <img
+                            key={index}
+                            src={url}
+                            alt={`Trip image ${index + 1}`}
+                            className="w-16 h-16 object-cover rounded border"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium sticky right-0 bg-gray-50 z-10">
                   {t.status[trip.status]!= 'Completed' &&(

@@ -88,7 +88,7 @@ model Trip {
   descriptionEn   String?
   latitude  Decimal @db.Decimal(10, 7)
   longitude Decimal @db.Decimal(10, 7)
-  imageUrls       String?
+  imageUrls       String? @db.Text
   createdAt       DateTime    @default(now()) @map("created_at")
   updatedAt       DateTime    @updatedAt @map("updated_at")
   bookings        Booking[]

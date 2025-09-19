@@ -50,11 +50,11 @@ export default function EditTripPage({ params }: PageProps) {
     status: 'scheduled',
     titleAr: '',
     titleEn: '',
-    descriptionAr	:'',
-    descriptionEn	:'',
-    latitude:'',
-    longitude:'',
-    lastBookingTime:'',
+    descriptionAr: '',
+    descriptionEn: '',
+    latitude: '',
+    longitude: '',
+    lastBookingTime: '',
   })
 
   useEffect(() => {
@@ -74,6 +74,7 @@ export default function EditTripPage({ params }: PageProps) {
       if (!response.ok) throw new Error(t.errors.loadFailed)
       
       const data = await response.json()
+      console.log('Trip details fetched:', data)
       
       setFormData({
         routeId: data.data.routeId,
@@ -92,7 +93,33 @@ export default function EditTripPage({ params }: PageProps) {
         
         
       })
-      setExistingImages(Array.isArray(data.data.imageUrls) ? data.data.imageUrls : JSON.parse(data.data.imageUrls || '[]'))
+      // Handle imageUrls - could be array, string, or null
+      let imageUrls = data.data.imageUrls
+      console.log('Raw imageUrls from API:', imageUrls, 'Type:', typeof imageUrls)
+      
+      if (imageUrls) {
+        if (Array.isArray(imageUrls)) {
+          // Already an array
+          console.log('ImageUrls is already an array:', imageUrls)
+          setExistingImages(imageUrls)
+        } else if (typeof imageUrls === 'string') {
+          try {
+            // Try to parse as JSON first
+            const parsed = JSON.parse(imageUrls)
+            console.log('Parsed JSON:', parsed)
+            setExistingImages(Array.isArray(parsed) ? parsed : [imageUrls])
+          } catch (error) {
+            // If not JSON, treat as single string
+            console.log('Not JSON, treating as single string:', imageUrls)
+            setExistingImages([imageUrls])
+          }
+        }
+      } else {
+        console.log('No imageUrls found, setting empty array')
+        setExistingImages([])
+      }
+      
+      console.log('Final existingImages:', existingImages)
 
     } catch (err: any) {
       toast.error(t.errors.loadFailed)
@@ -167,6 +194,18 @@ export default function EditTripPage({ params }: PageProps) {
       newImages.forEach((file) => {
         form.append('images', file);
       });
+      
+      // Debug: Log form data being sent
+      console.log('Edit form data being sent:')
+      console.log('Existing images:', existingImages)
+      console.log('New images count:', newImages.length)
+      for (let [key, value] of Array.from(form.entries())) {
+        if (value instanceof File) {
+          console.log(`${key}: File(${value.name}, ${value.size} bytes)`)
+        } else {
+          console.log(`${key}: ${value}`)
+        }
+      }
   
       const response = await fetch(`/api/admin/trips/${params.id}`, {
         method: 'PUT',
@@ -176,11 +215,14 @@ export default function EditTripPage({ params }: PageProps) {
         body: form,
       });
   
-      const data = await response.json();
-  
       if (!response.ok) {
-        throw new Error(data.error || t.errors.updateFailed);
+        const errorText = await response.text()
+        console.error('API Error Response:', errorText)
+        throw new Error(`Server error: ${response.status} ${response.statusText}`)
       }
+      
+      const data = await response.json();
+      console.log('Update success response:', data)
   
       toast.success(t.success.updated);
       setTimeout(() => {
