@@ -8,7 +8,9 @@ import {
   ArrowLeftIcon,
   MagnifyingGlassIcon,
   CheckIcon,
-  XMarkIcon
+  XMarkIcon,
+  ArrowPathIcon,
+  ArrowPathRoundedSquareIcon
 } from '@heroicons/react/24/outline'
 import ConfirmDialogAdmin from '@/components/ConfirmDialogAdmin'
 import { useLanguage } from '@/context/LanguageContext'
@@ -82,10 +84,10 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [bookingToDelete, setBookingToDelete] = useState<string | null>(null)
-
+  const token = localStorage.getItem('token')
   const fetchBookings = async () => {
     try {
-      const token = localStorage.getItem('token')
+      
       const response = await fetch('/api/admin/bookings', {
         headers: {
           'Authorization': `Bearer ${token}`
@@ -301,7 +303,14 @@ export default function BookingsPage() {
         <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
           <h1 className="text-2xl font-bold text-gray-900">{t.title}</h1>
           
+          
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
+             <button
+              onClick={() => fetchBookings()}
+              className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
+            >
+              <span> refresh</span>
+              </button>
             <div className="relative w-full sm:w-64">
               <input
                 type="text"
@@ -319,6 +328,7 @@ export default function BookingsPage() {
             >
               <span>{t.blockSeats.title}</span>
             </button>
+            
           </div>
         </div>
 
@@ -330,7 +340,7 @@ export default function BookingsPage() {
                   {/* <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     {t.columns.bookingId}
                   </th> */}
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider sticky left-0 bg-gray-50 z-10">
                     {t.columns.customer}
                   </th>
                   
@@ -369,7 +379,7 @@ export default function BookingsPage() {
                     {/* <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                       {booking.id}
                     </td> */}
-                    <td className="px-6 py-4 whitespace-nowrap">
+                    <td className="px-6 py-4 whitespace-nowrap sticky left-0 bg-gray-50 z-10">
                       <div className="text-sm text-gray-900">{booking.user.name}</div>
                       <div className="text-sm text-gray-500">{booking.user.email}</div>
                     </td>     
