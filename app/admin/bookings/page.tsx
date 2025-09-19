@@ -84,6 +84,7 @@ export default function BookingsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [bookingToDelete, setBookingToDelete] = useState<string | null>(null)
+  const [refresh, setRefresh] = useState(true)
   const token = localStorage.getItem('token')
   const fetchBookings = async () => {
     try {
@@ -306,7 +307,7 @@ export default function BookingsPage() {
           
           <div className="flex flex-col sm:flex-row items-center gap-4 w-full sm:w-auto">
              <button
-              onClick={() => fetchBookings()}
+              onClick={() => setRefresh(!refresh)}
               className="w-full sm:w-auto px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all duration-200 flex items-center justify-center gap-2 shadow-sm"
             >
               <span> refresh</span>

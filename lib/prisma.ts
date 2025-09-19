@@ -8,13 +8,13 @@ const prisma = new PrismaClient({
     }
   },
   // Connection pooling optimization
-  __internal: {
-    engine: {
-      connectTimeout: 10000,
-      poolTimeout: 20000,
-      maxConnections: 20
-    }
-  }
+  // __internal: {
+  //   engine: {
+  //     connectTimeout: 10000,
+  //     poolTimeout: 20000,
+  //     maxConnections: 20
+  //   }
+  // }
 })
 
 // Optimize for production

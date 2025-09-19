@@ -10,6 +10,7 @@ const CACHE_TTL = 30000 // 30 seconds cache
 
 // GET - Fetch all trips with pagination and filters
 export const GET = asyncHandler(async (request: NextRequest) => {
+  
   try {
     const { searchParams } = new URL(request.url)
     const page = parseInt(searchParams.get('page') || '1')

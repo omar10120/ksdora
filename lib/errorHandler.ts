@@ -230,7 +230,7 @@ export class ErrorHandler {
       try {
         return await fn(request, context)
       } catch (error) {
-        return this.handle(error, request)
+        return ErrorHandler.handle(error, request)
       }
     }
   }
@@ -269,7 +269,9 @@ export class ErrorHandler {
 export const errorHandler = ErrorHandler
 
 // Export async handler wrapper
-export const asyncHandler = ErrorHandler.asyncHandler
+// export const asyncHandler = ErrorHandler.asyncHandler
+export const asyncHandler = (fn: Function) => ErrorHandler.asyncHandler(fn)
+
 
 // Export validation handler
 export const validateAndHandle = ErrorHandler.validateAndHandle
