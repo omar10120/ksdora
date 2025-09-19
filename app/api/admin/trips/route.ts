@@ -232,53 +232,7 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     }
 
     // Ensure imageUrls is properly formatted as complete JSON string
-    let imageUrlsString = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null
-    
-    // Validate JSON string completeness
-    if (imageUrlsString) {
-      try {
-        const parsed = JSON.parse(imageUrlsString)
-        console.log('✅ JSON validation successful:', parsed)
-        console.log('✅ JSON string length:', imageUrlsString.length)
-        console.log('✅ JSON string ends with ]:', imageUrlsString.endsWith(']'))
-        
-        // Additional validation: ensure it's a complete array
-        if (!Array.isArray(parsed)) {
-          throw new Error('Parsed result is not an array')
-        }
-        if (parsed.length !== imageUrls.length) {
-          throw new Error('Array length mismatch')
-        }
-      } catch (error) {
-        console.error('❌ JSON validation failed:', error)
-        console.error('❌ Invalid JSON string:', imageUrlsString)
-        console.error('❌ Original imageUrls array:', imageUrls)
-        
-        // Fallback: try to fix truncated JSON
-        let fixedJsonString = imageUrlsString
-        if (!imageUrlsString.endsWith(']')) {
-          // Try to find the last complete URL and close the array
-          const lastCompleteUrl = imageUrlsString.match(/"[^"]*"/g)?.pop()
-          if (lastCompleteUrl) {
-            fixedJsonString = imageUrlsString.substring(0, imageUrlsString.lastIndexOf(lastCompleteUrl)) + lastCompleteUrl + ']'
-            console.log('🔧 Attempting to fix truncated JSON:', fixedJsonString)
-          }
-        }
-        
-        // Use the fixed version if available
-        if (fixedJsonString !== imageUrlsString) {
-          try {
-            JSON.parse(fixedJsonString)
-            console.log('✅ Fixed JSON validation successful')
-            // Update the imageUrlsString to use the fixed version
-            imageUrlsString = fixedJsonString
-          } catch (fixError) {
-            console.error('❌ Fixed JSON still invalid:', fixError)
-          }
-        }
-      }
-    }
-    
+    const imageUrlsString = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null
     console.log('Image URLs array:', imageUrls)
     console.log('Image URLs string:', imageUrlsString)
 
@@ -291,10 +245,6 @@ export const POST = asyncHandler(async (request: NextRequest) => {
       })
 
       // Create trip with seats
-      console.log('📝 About to store imageUrls in DB:', imageUrlsString)
-      console.log('📝 ImageUrls string length:', imageUrlsString?.length)
-      console.log('📝 ImageUrls ends with ]:', imageUrlsString?.endsWith(']'))
-      
       return tx.trip.create({
         data: {
           routeId,
@@ -346,21 +296,14 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     })
 
     // Format the response with properly parsed imageUrls
-    console.log('📖 Retrieved imageUrls from DB:', trip.imageUrls)
-    console.log('📖 Retrieved imageUrls length:', trip.imageUrls?.length)
-    console.log('📖 Retrieved imageUrls ends with ]:', trip.imageUrls?.endsWith(']'))
-    
     let parsedImageUrls = null
     
     if (trip.imageUrls) {
       try {
         // Try to parse as JSON first
         parsedImageUrls = JSON.parse(trip.imageUrls)
-        console.log('✅ Response parsing successful:', parsedImageUrls)
       } catch (error) {
         // If it's not JSON, treat as single string and wrap in array
-        console.error('❌ Response parsing failed:', error)
-        console.error('❌ Raw imageUrls from DB:', trip.imageUrls)
         parsedImageUrls = [trip.imageUrls]
       }
     }
@@ -369,8 +312,6 @@ export const POST = asyncHandler(async (request: NextRequest) => {
       ...trip,
       imageUrls: parsedImageUrls
     }
-    
-    console.log('✅ Final formatted trip imageUrls:', formattedTrip.imageUrls)
 
     return ApiResponseBuilder.created(
       formattedTrip,

@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
+import  { ErrorMessages, StatusCodes, SuccessMessages  ,ApiResponseBuilder} from './lib/apiResponse'
 
 export async function middleware(request: NextRequest) {
   const authHeader = request.headers.get('Authorization')
@@ -34,8 +35,12 @@ export async function middleware(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('Token verification error:', error)
-    return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
+    
+
+    // return NextResponse.json(ApiResponseBuilder.error('Invalid token'), { status: 401 })
+    return ApiResponseBuilder.unauthorized(
+      ErrorMessages.INVALID_TOKEN
+    )
   }
 }
 
