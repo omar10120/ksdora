@@ -6,9 +6,11 @@ import {
   PencilIcon, 
   TrashIcon, 
   PlusIcon,
-  MagnifyingGlassIcon 
+  MagnifyingGlassIcon,
+  PhotoIcon
 } from '@heroicons/react/24/outline'
 import { useLanguage } from '@/context/LanguageContext'
+import ImageDialog from '@/components/admin/ImageDialog'
 
 interface Trip {
   titleAr: string,
@@ -43,6 +45,8 @@ export default function TripsPage() {
   const [loading, setLoading] = useState(true)
   const [loadingProgress, setLoadingProgress] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')  
+  const [selectedImages, setSelectedImages] = useState<string[]>([])
+  const [isImageDialogOpen, setIsImageDialogOpen] = useState(false)
   const router = useRouter()
   const token = localStorage.getItem('token')
   useEffect(() => {
@@ -110,6 +114,27 @@ export default function TripsPage() {
       case 'cancelled': return 'bg-red-100 text-red-800'
       default: return 'bg-gray-100 text-gray-800'
     }
+  }
+
+  const handleImageClick = (imageUrls: string[] | string | null) => {
+    if (!imageUrls) return
+    
+    let images: string[] = []
+    if (Array.isArray(imageUrls)) {
+      images = imageUrls
+    } else if (typeof imageUrls === 'string') {
+      images = [imageUrls]
+    }
+    
+    if (images.length > 0) {
+      setSelectedImages(images)
+      setIsImageDialogOpen(true)
+    }
+  }
+
+  const closeImageDialog = () => {
+    setIsImageDialogOpen(false)
+    setSelectedImages([])
   }
 
   const filteredTrips = trips.filter(trip => 
@@ -268,7 +293,7 @@ export default function TripsPage() {
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                   {trip.longitude}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-gray-900 w-[300px]">
+                <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                   {(() => {
                     // Handle both array and single string cases
                     let imageUrls = trip.imageUrls
@@ -283,21 +308,18 @@ export default function TripsPage() {
                       return <span className="text-gray-400">No images</span>
                     }
                     
-                    // Display images
+                    // Display button to view images
                     return (
-                      <div className="flex flex-wrap gap-2">
-                        {imageUrls.map((url, index) => (
-                          <img
-                            key={index}
-                            src={url}
-                            alt={`Trip image ${index + 1}`}
-                            className="w-16 h-16 object-cover rounded border"
-                            onError={(e) => {
-                              e.currentTarget.style.display = 'none'
-                            }}
-                          />
-                        ))}
-                      </div>
+                      <button
+                        onClick={() => handleImageClick(trip.imageUrls)}
+                        className="flex items-center space-x-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors"
+                        title={`View ${imageUrls.length} image${imageUrls.length > 1 ? 's' : ''}`}
+                      >
+                        <PhotoIcon className="h-4 w-4" />
+                        <span className="text-sm font-medium">
+                          {imageUrls.length} image{imageUrls.length > 1 ? 's' : ''}
+                        </span>
+                      </button>
                     )
                   })()}
                 </td>
@@ -324,6 +346,14 @@ export default function TripsPage() {
           </tbody>
         </table>
       </div>
+
+      {/* Modern Image Dialog */}
+      <ImageDialog
+        isOpen={isImageDialogOpen}
+        onClose={closeImageDialog}
+        images={selectedImages}
+        title="Trip Images"
+      />
         
     </div>
   )
