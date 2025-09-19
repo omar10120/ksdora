@@ -333,20 +333,7 @@ export default function NewTripPage() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            {t.labels.latitude}
-            (latitude)
-          </label>
-          <input
-            disabled={loadingProgress}
-            type="number"
-            required
-            value={formData.latitude}
-            onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-          />
-        </div>
+     
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
             {t.labels.images}
