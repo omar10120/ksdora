@@ -240,7 +240,7 @@ async function main() {
         descriptionEn: 'International trip from Damascus to Beirut',
         longitude: 35.5018,
         latitude: 33.8938,
-        primaryImage: 'https://example.com/damascus-beirut-primary.jpg'
+        primaryImage: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1758310811/trips/r2kesf3sts8rxzhhsu0z.jpg'
       }
     })
   ])
@@ -250,17 +250,17 @@ async function main() {
   const images = [
     {
       tripId: trips[0].id, // Damascus to Aleppo
-      imageUrl: 'https://example.com/damascus-aleppo.jpg',
+      imageUrl: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1758310811/trips/r2kesf3sts8rxzhhsu0z.jpg',
       altText: 'Damascus to Aleppo trip image'
     },
     {
       tripId: trips[1].id, // Damascus to Homs
-      imageUrl: 'https://example.com/damascus-homs.jpg',
+      imageUrl: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1758310811/trips/r2kesf3sts8rxzhhsu0z.jpg',
       altText: 'Damascus to Homs trip image'
     },
     {
       tripId: trips[2].id, // Damascus to Beirut
-      imageUrl: 'https://example.com/damascus-beirut.jpg',
+      imageUrl: 'https://res.cloudinary.com/dvo4hzzpk/image/upload/v1758310811/trips/r2kesf3sts8rxzhhsu0z.jpg',
       altText: 'Damascus to Beirut trip image'
     }
   ]
