@@ -265,7 +265,7 @@ async function main() {
     }
   ]
 
-  await Promise.all(
+await Promise.all(
     images.map(imageData =>
       prisma.images.create({
         data: imageData
