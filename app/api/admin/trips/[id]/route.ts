@@ -2,10 +2,10 @@ import { NextRequest } from 'next/server'
 import prisma from '@/lib/prisma'
 import { ApiResponseBuilder, SuccessMessages, ErrorMessages, StatusCodes } from '@/lib/apiResponse'
 import { validateRequest } from '@/lib/validation'
-import { asyncHandler, ApiError } from '@/lib/errorHandler'
+import { asyncHandler, ApiError, ErrorHandler } from '@/lib/errorHandler'
 import { v2 as cloudinary } from 'cloudinary'
 import { uploadToCloudinary } from '@/lib/uploadToCloudinary'
-import { Decimal } from '@prisma/client/runtime/library'
+
 
 export const runtime = 'nodejs' // Required for fs/promises and handling files
 
@@ -73,7 +73,7 @@ export const GET = asyncHandler(async (
       SuccessMessages.RETRIEVED
     )
   } catch (error) {
-    throw ApiError.database('Failed to fetch trip')
+    throw ErrorHandler.handle(error, request)
   }
 })
 
@@ -136,10 +136,10 @@ export const PUT = asyncHandler(async (
       return ApiResponseBuilder.notFound('Bus')
     }
 
-    // if (bus.status !== 'active') {
+    // if (bus.status !== 'active' ) {
     //   return ApiResponseBuilder.error(
     //     `Bus is not available for scheduling. Current status: ${bus.status}`,
-    //     400
+    //     StatusCodes.BAD_REQUEST
     //   )
     // }
 
@@ -185,11 +185,11 @@ export const PUT = asyncHandler(async (
       }
     })
 
-    // if (conflictingTrip) {
-    //   return ApiResponseBuilder.conflict(
-    //     `Bus is already scheduled for another trip during this time period. Conflicting trip: ${conflictingTrip.id}`
-    //   )
-    // }
+    if (conflictingTrip) {
+      return ApiResponseBuilder.conflict(
+        `Bus is already scheduled for another trip during this time period. Conflicting trip: ${conflictingTrip.id}`
+      )
+    }
 
     // Upload new images to Cloudinary
     const newImageUrls: string[] = []
@@ -250,10 +250,10 @@ export const PUT = asyncHandler(async (
       SuccessMessages.UPDATED
     )
   } catch (error) {
-    throw ApiError.database('Failed to update trip')
+    throw ErrorHandler.handle(error, request)
   }
 })
-// export async function PUT(req: NextRequest) {
+
   
 //   try {
 //     const formData = await req.formData();
@@ -394,6 +394,6 @@ export const DELETE = asyncHandler(async (
       SuccessMessages.DELETED
     )
   } catch (error) {
-    throw ApiError.database('Failed to delete trip')
+    throw ErrorHandler.handle(error, request)
   }
 })
