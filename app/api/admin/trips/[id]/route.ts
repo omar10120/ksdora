@@ -108,7 +108,7 @@ export const PUT = asyncHandler(async (
 
     const existingImageIds = JSON.parse(formData.get('existingImageIds') as string || '[]') as string[]
     const files = formData.getAll('images') as File[]
-    const primaryImage = formData.get('primaryImage') as string
+    const primaryImageFile = formData.get('primaryImage') as File
 
     // Validate required fields
     if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
@@ -197,6 +197,28 @@ export const PUT = asyncHandler(async (
       return ApiResponseBuilder.conflict(
         `Bus is already scheduled for another trip during this time period. Conflicting trip: ${conflictingTrip.id}`
       )
+    }
+
+    // Upload primary image to Cloudinary if provided
+    let primaryImage = null
+    if (primaryImageFile && primaryImageFile.size > 0) {
+      const buffer = Buffer.from(await primaryImageFile.arrayBuffer())
+      const base64 = buffer.toString('base64')
+      const mimeType = primaryImageFile.type
+      const dataURI = `data:${mimeType};base64,${base64}`
+
+      const uploadResult = await cloudinary.uploader.upload(dataURI, {
+        folder: 'trips/primary'
+      })
+
+      primaryImage = uploadResult.secure_url
+    } else {
+      // Keep existing primary image if no new one provided
+      const existingTrip = await prisma.trip.findUnique({
+        where: { id: params.id },
+        select: { primaryImage: true }
+      })
+      primaryImage = existingTrip?.primaryImage
     }
 
     // Update trip and handle images in a transaction
@@ -309,99 +331,6 @@ export const PUT = asyncHandler(async (
   }
 })
 
-  
-//   try {
-//     const formData = await req.formData();
-
-//     const routeId = formData.get('routeId') as string;
-//     const busId = formData.get('busId') as string;
-//     const departureTime = formData.get('departureTime') as string;
-//     const arrivalTime = formData.get('arrivalTime') as string;
-//     const price = parseFloat(formData.get('price') as string);
-//     const titleAr = formData.get('titleAr') as string;
-//     const description = formData.get('description') as string;
-//     const existingImages = JSON.parse(formData.get('existingImages') as string) as string[];
-//     const files = formData.getAll('images') as File[];
-
-//     // Validate required fields
-//     if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
-//       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
-//     }
-
-//     // Check if bus is active
-//     const bus = await prisma.bus.findFirst({
-//       where: { id: busId, status: 'active' },
-//     });
-
-//     // if (!bus) {
-//     //   return NextResponse.json({ error: 'Bus is not available or not active' + busId  }, { status: 400 });
-//     // }
-
-//     // Check bus availability for time range
-//     const existingTrip = await prisma.trip.findFirst({
-//       where: {
-//         id: { not: req.nextUrl.pathname.split('/').pop() }, // Exclude current trip
-//         busId,
-//         OR: [
-//           {
-//             AND: [
-//               { departureTime: { lte: new Date(departureTime) } },
-//               { arrivalTime: { gte: new Date(departureTime) } },
-//             ],
-//           },
-//           {
-//             AND: [
-//               { departureTime: { lte: new Date(arrivalTime) } },
-//               { arrivalTime: { gte: new Date(arrivalTime) } },
-//             ],
-//           },
-//         ],
-//       },
-//     });
-
-//     if (existingTrip) {
-//       return NextResponse.json({ error: 'Bus is not available for this period' }, { status: 400 });
-//     }
-
-//     // Create upload directory
-//     const uploadDir = path.join(process.cwd(), 'public', 'uploads');
-//     await fs.mkdir(uploadDir, { recursive: true });
-
-//     // Handle image uploads
-//     const newImageUrls: string[] = [];
-//     for (const file of files) {
-//       const buffer = Buffer.from(await file.arrayBuffer());
-//       const fileName = `${Date.now()}-${file.name}`;
-//       const filePath = path.join(uploadDir, fileName);
-//       await fs.writeFile(filePath, buffer);
-//       newImageUrls.push(`/uploads/${fileName}`);
-//     }
-
-//     const imageUrls = [...existingImages, ...newImageUrls];
-
-//     // Update trip
-//     const tripId = req.nextUrl.pathname.split('/').pop();
-//     const updatedTrip = await prisma.trip.update({
-//       where: { id: tripId },
-//       data: {
-//         routeId,
-//         busId,
-//         titleAr,
-//         description,
-//         departureTime: new Date(departureTime),
-//         arrivalTime: new Date(arrivalTime),
-//         price,
-//         status: 'scheduled',
-//         imageUrls: JSON.stringify(imageUrls),
-//       },
-//     });
-
-//     return NextResponse.json(updatedTrip);
-//   } catch (error) {
-//     console.error('Update trip error:', error);
-//     return NextResponse.json({ error: 'Failed to update trip' }, { status: 500 });
-//   }
-// }
 
 // DELETE - Delete trip
 export const DELETE = asyncHandler(async (

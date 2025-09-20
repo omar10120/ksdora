@@ -457,7 +457,8 @@ export const en = {
               arrivalTime: 'Arrival Time',
               lastbookingTime: 'Last Booking Time',
               price: 'Price',
-              status: 'Status'
+              status: 'Status',
+              primaryImage: 'Primary Image'
             },
             placeholders: {
               selectRoute: 'Select a route',

@@ -156,7 +156,7 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     const descriptionEn = formData.get('descriptionEn') as string
     const latitude = formData.get('latitude') as string
     const longitude = formData.get('longitude') as string
-    const primaryImage = formData.get('primaryImage') as string
+    const primaryImageFile = formData.get('primaryImage') as File
     const files = formData.getAll('images') as File[]
     
     // Validate required fields
@@ -222,7 +222,22 @@ export const POST = asyncHandler(async (request: NextRequest) => {
       return ApiResponseBuilder.conflict('Bus is not available for this period')
     }
 
-    // Upload images to Cloudinary
+    // Upload primary image to Cloudinary
+    let primaryImage = null
+    if (primaryImageFile && primaryImageFile.size > 0) {
+      const buffer = Buffer.from(await primaryImageFile.arrayBuffer())
+      const base64 = buffer.toString('base64')
+      const mimeType = primaryImageFile.type
+      const dataURI = `data:${mimeType};base64,${base64}`
+
+      const uploadResult = await cloudinary.uploader.upload(dataURI, {
+        folder: 'trips/primary'
+      })
+
+      primaryImage = uploadResult.secure_url
+    }
+
+    // Upload additional images to Cloudinary
     const images: string[] = []
     for (const file of files) {
       if (file.size > 0) { // Only process files with content
@@ -239,7 +254,8 @@ export const POST = asyncHandler(async (request: NextRequest) => {
       }
     }
 
-    console.log('Image URLs array:', images)
+    console.log('Primary image URL:', primaryImage)
+    console.log('Additional image URLs array:', images)
 
     // Create trip with seats and images in transaction
     const trip = await prisma.$transaction(async (tx) => {

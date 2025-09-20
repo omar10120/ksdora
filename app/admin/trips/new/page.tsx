@@ -28,7 +28,7 @@ export default function NewTripPage() {
   const [loadingProgressCansel, setloadingProgressCansel] = useState(false)
   const [error, setError] = useState('')
   
-  const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([] as File[])
 
 
   const [formData, setFormData] = useState({
@@ -39,14 +39,14 @@ export default function NewTripPage() {
     price: '',
     titleAr : '',
     titleEn : '',
-    imageUrl: '',
+    primaryImage: '' as unknown as File | null,
     descriptionAr	:'',
     descriptionEn	:'',
     lastBookingTime	:'',
     longitude	:'',
     latitude	:'',
-
-  })
+    images: [] as File[] | null,
+  } as any)
 
   useEffect(() => {
     fetchRoutes()
@@ -102,10 +102,10 @@ export default function NewTripPage() {
       const form = new FormData()
   
       Object.entries(formData).forEach(([key, value]) => {
-        form.append(key, value)
+        form.append(key, value as string | Blob)
       })
   
-      imageFiles.forEach((file) => {
+      formData.images?.forEach((file: File) => {
         form.append('images', file)
       })
       
@@ -320,7 +320,24 @@ export default function NewTripPage() {
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
           />
         </div>
-        
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            {t.labels.primaryImage}
+          </label>
+          <input
+            disabled={loadingProgress}
+            accept="image/*"
+            type="file"
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              if (file) {
+                setFormData({ ...formData, primaryImage: file })
+              }
+            }}
+            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+          />
+
+        </div>
      
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -334,7 +351,7 @@ export default function NewTripPage() {
             onChange={(e) => {
               const files = Array.from(e.target.files || [])
               if (files) {
-                setImageFiles(files)
+                setFormData({ ...formData, images: files })
 
               }
             }}
