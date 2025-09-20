@@ -481,7 +481,8 @@ export const ar = {
             arrivalTime: 'وقت الوصول',
             lastbookingTime: 'اخر موعد للحجز',
             price: 'السعر',
-            status: 'الحالة'
+            status: 'الحالة',
+            primaryImage: 'الصورة الرئيسية'
           },
           placeholders: {
             selectRoute: 'اختر المسار',
