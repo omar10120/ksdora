@@ -75,11 +75,18 @@ export const GET = asyncHandler(async (request: NextRequest) => {
             status: true
           }
         },
-        seats: {
+        seats: {  
           select: {
             id: true,
             seatNumber: true,
             status: true
+          }
+        },
+        images: {
+          select: {
+            id: true,
+            imageUrl: true,
+            altText: true
           }
         },
         bookings: {
@@ -108,21 +115,21 @@ export const GET = asyncHandler(async (request: NextRequest) => {
 
     // Format trips with properly parsed imageUrls
     const formattedTrips = trips.map(trip => {
-      let parsedImageUrls = null
+      let parsedImages = null
       
-      if (trip.imageUrls) {
+      if (trip.images) {
         try {
           // Try to parse as JSON first
-          parsedImageUrls = JSON.parse(trip.imageUrls)
+          parsedImages = trip.images
         } catch (error) {
           // If it's not JSON, treat as single string and wrap in array
-          parsedImageUrls = [trip.imageUrls]
+          parsedImages = [trip.images]
         }
       }
       
       return {
         ...trip,
-        imageUrls: parsedImageUrls
+        images: parsedImages
       }
     })
 
@@ -149,6 +156,7 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     const descriptionEn = formData.get('descriptionEn') as string
     const latitude = formData.get('latitude') as string
     const longitude = formData.get('longitude') as string
+    const primaryImage = formData.get('primaryImage') as string
     const files = formData.getAll('images') as File[]
     
     // Validate required fields
@@ -215,7 +223,7 @@ export const POST = asyncHandler(async (request: NextRequest) => {
     }
 
     // Upload images to Cloudinary
-    const imageUrls: string[] = []
+    const images: string[] = []
     for (const file of files) {
       if (file.size > 0) { // Only process files with content
         const buffer = Buffer.from(await file.arrayBuffer())
@@ -227,16 +235,13 @@ export const POST = asyncHandler(async (request: NextRequest) => {
           folder: 'trips'
         })
 
-        imageUrls.push(uploadResult.secure_url)
+        images.push(uploadResult.secure_url)
       }
     }
 
-    // Ensure imageUrls is properly formatted as complete JSON string
-    const imageUrlsString = imageUrls.length > 0 ? JSON.stringify(imageUrls) : null
-    console.log('Image URLs array:', imageUrls)
-    console.log('Image URLs string:', imageUrlsString)
+    console.log('Image URLs array:', images)
 
-    // Create trip with seats in transaction
+    // Create trip with seats and images in transaction
     const trip = await prisma.$transaction(async (tx) => {
       // Update bus status
       await tx.bus.update({
@@ -245,7 +250,7 @@ export const POST = asyncHandler(async (request: NextRequest) => {
       })
 
       // Create trip with seats
-      return tx.trip.create({
+      const newTrip = await tx.trip.create({
         data: {
           routeId,
           busId,
@@ -255,19 +260,37 @@ export const POST = asyncHandler(async (request: NextRequest) => {
           descriptionAr,
           latitude,
           longitude,
+          primaryImage,
           departureTime: new Date(departureTime),
           arrivalTime: new Date(arrivalTime),
           lastBookingTime: lastBookingTime ? new Date(lastBookingTime) : new Date(departureTime),
           price,
           status: 'scheduled',
-          imageUrls: imageUrlsString,
           seats: {
             create: Array.from({ length: bus.capacity }, (_, i) => ({
               seatNumber: `${String.fromCharCode(65 + Math.floor(i / 4))}${(i % 4) + 1}`,
               status: 'available'
             }))
           }
-        },
+        }
+      })
+
+      // Create Images records
+      if (images.length > 0) {
+        const imageRecords = images.map((url, index) => ({
+          tripId: newTrip.id,
+          imageUrl: url,
+          altText: `Trip image ${index + 1}`
+        }))
+
+        await tx.images.createMany({
+          data: imageRecords
+        })
+      }
+
+      // Return trip with all relations
+      return tx.trip.findUnique({
+        where: { id: newTrip.id },
         include: {
           route: {
             include: {
@@ -290,31 +313,20 @@ export const POST = asyncHandler(async (request: NextRequest) => {
               seatNumber: true,
               status: true
             }
+          },
+          images: {
+            select: {
+              id: true,
+              imageUrl: true,
+              altText: true
+            }
           }
         }
       })
     })
 
-    // Format the response with properly parsed imageUrls
-    let parsedImageUrls = null
-    
-    if (trip.imageUrls) {
-      try {
-        // Try to parse as JSON first
-        parsedImageUrls = JSON.parse(trip.imageUrls)
-      } catch (error) {
-        // If it's not JSON, treat as single string and wrap in array
-        parsedImageUrls = [trip.imageUrls]
-      }
-    }
-    
-    const formattedTrip = {
-      ...trip,
-      imageUrls: parsedImageUrls
-    }
-
     return ApiResponseBuilder.created(
-      formattedTrip,
+      trip,
       SuccessMessages.CREATED
     )
   } catch (error) {

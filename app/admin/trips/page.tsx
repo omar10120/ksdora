@@ -14,6 +14,12 @@ import {
 import { useLanguage } from '@/context/LanguageContext'
 import ImageDialog from '@/components/admin/ImageDialog'
 
+interface Images {
+  id: string
+  imageUrl: string
+  altText: string
+}
+
 interface Trip {
   titleAr: string,
   titleEn: string,
@@ -21,7 +27,8 @@ interface Trip {
   descriptionEn: string,
   latitude: string,
   longitude: string,
-  imageUrls: string[] | string | null,
+  primaryImage: string | null,
+  images: Images[],
   id: string
   routeId: string
   busId: string
@@ -119,20 +126,12 @@ export default function TripsPage() {
     }
   }
 
-  const handleImageClick = (imageUrls: string[] | string | null) => {
-    if (!imageUrls) return
+  const handleImageClick = (images: Images[]) => {
+    if (!images || images.length === 0) return
     
-    let images: string[] = []
-    if (Array.isArray(imageUrls)) {
-      images = imageUrls
-    } else if (typeof imageUrls === 'string') {
-      images = [imageUrls]
-    }
-    
-    if (images.length > 0) {
-      setSelectedImages(images)
-      setIsImageDialogOpen(true)
-    }
+    const imageUrls = images.map(img => img.imageUrl)
+    setSelectedImages(imageUrls)
+    setIsImageDialogOpen(true)
   }
 
   const closeImageDialog = () => {
@@ -297,29 +296,21 @@ export default function TripsPage() {
                 
                 <td className="px-6 py-4 whitespace-nowrap text-gray-900">
                   {(() => {
-                    // Handle both array and single string cases
-                    let imageUrls = trip.imageUrls
-                    
-                    // If it's a string, convert to array
-                    if (typeof imageUrls === 'string') {
-                      imageUrls = [imageUrls]
-                    }
-                    
-                    // If it's null or empty array, show no images
-                    if (!imageUrls || imageUrls.length === 0) {
+                    // If no images, show no images
+                    if (!trip.images || trip.images.length === 0) {
                       return <span className="text-gray-400">No images</span>
                     }
                     
                     // Display button to view images
                     return (
                       <button
-                        onClick={() => handleImageClick(trip.imageUrls)}
+                        onClick={() => handleImageClick(trip.images)}
                         className="flex items-center space-x-2 px-3 py-2 bg-indigo-100 text-indigo-700 rounded-md hover:bg-indigo-200 transition-colors"
-                        title={`View ${imageUrls.length} image${imageUrls.length > 1 ? 's' : ''}`}
+                        title={`View ${trip.images.length} image${trip.images.length > 1 ? 's' : ''}`}
                       >
                         <PhotoIcon className="h-4 w-4" />
                         <span className="text-sm font-medium">
-                          {imageUrls.length} image{imageUrls.length > 1 ? 's' : ''}
+                          {trip.images.length} image{trip.images.length > 1 ? 's' : ''}
                         </span>
                       </button>
                     )

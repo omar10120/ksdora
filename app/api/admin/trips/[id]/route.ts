@@ -44,6 +44,13 @@ export const GET = asyncHandler(async (
             status: true
           }
         },
+        images: {
+          select: {
+            id: true,
+            imageUrl: true,
+            altText: true
+          }
+        },
         bookings: {
           include: {
             user: {
@@ -99,8 +106,9 @@ export const PUT = asyncHandler(async (
     const longitude = formData.get('longitude') as string
     const latitude = formData.get('latitude') as string
 
-    const existingImages = JSON.parse(formData.get('existingImages') as string) as string[]
+    const existingImageIds = JSON.parse(formData.get('existingImageIds') as string || '[]') as string[]
     const files = formData.getAll('images') as File[]
+    const primaryImage = formData.get('primaryImage') as string
 
     // Validate required fields
     if (!routeId || !busId || !departureTime || !arrivalTime || !price) {
@@ -191,58 +199,105 @@ export const PUT = asyncHandler(async (
       )
     }
 
-    // Upload new images to Cloudinary
-    const newImageUrls: string[] = []
-    for (const file of files) {
-      const url = await uploadToCloudinary(file)
-      newImageUrls.push(url)
-    }
+    // Update trip and handle images in a transaction
+    const updatedTrip = await prisma.$transaction(async (tx) => {
+      // Update trip
+      const trip = await tx.trip.update({
+        where: { id: params.id },
+        data: {
+          routeId,
+          busId,
+          titleAr,
+          titleEn,
+          descriptionAr,
+          descriptionEn,
+          longitude,
+          latitude,
+          primaryImage,
+          departureTime: new Date(departureTime),
+          arrivalTime: new Date(arrivalTime),
+          lastBookingTime: lastBookingTime ? new Date(lastBookingTime) : new Date(departureTime),
+          price,
+          status: 'scheduled'
+        }
+      })
 
-    const imageUrls = [...existingImages, ...newImageUrls]
+      // Handle image management
+      // 1. Delete images not in existingImageIds
+      await tx.images.deleteMany({
+        where: {
+          tripId: params.id,
+          id: {
+            notIn: existingImageIds
+          }
+        }
+      })
 
-    // Update trip
-    const updatedTrip = await prisma.trip.update({
-      where: { id: params.id },
-      data: {
-        routeId,
-        busId,
-        titleAr,
-        titleEn,
-        descriptionAr,
-        descriptionEn,
-        longitude,
-        latitude,
-        departureTime: new Date(departureTime),
-        arrivalTime: new Date(arrivalTime),
-        lastBookingTime: lastBookingTime ? new Date(lastBookingTime) : new Date(departureTime),
-        price,
-        status: 'scheduled',
-        imageUrls: JSON.stringify(imageUrls)
-      },
-      include: {
-        route: {
-          include: {
-            departureCity: { include: { country: true } },
-            arrivalCity: { include: { country: true } }
-          }
-        },
-        bus: {
-          select: {
-            id: true,
-            plateNumber: true,
-            model: true,
-            capacity: true,
-            status: true
-          }
-        },
-        seats: {
-          select: {
-            id: true,
-            seatNumber: true,
-            status: true
+      // 2. Upload new images
+      const uploadedImages = []
+      for (const file of files) {
+        if (file.size > 0) {
+          try {
+            const url = await uploadToCloudinary(file)
+            uploadedImages.push(url)
+          } catch (error) {
+            console.error('Error uploading image:', error)
           }
         }
       }
+
+      // 3. Create new Images records
+      if (uploadedImages.length > 0) {
+        const existingImagesCount = await tx.images.count({
+          where: { tripId: params.id }
+        })
+
+        const newImageRecords = uploadedImages.map((url, index) => ({
+          tripId: params.id,
+          imageUrl: url,
+          altText: `Trip image ${existingImagesCount + index + 1}`
+        }))
+
+        await tx.images.createMany({
+          data: newImageRecords
+        })
+      }
+
+      // 4. Return trip with all relations
+      return tx.trip.findUnique({
+        where: { id: params.id },
+        include: {
+          route: {
+            include: {
+              departureCity: { include: { country: true } },
+              arrivalCity: { include: { country: true } }
+            }
+          },
+          bus: {
+            select: {
+              id: true,
+              plateNumber: true,
+              model: true,
+              capacity: true,
+              status: true
+            }
+          },
+          seats: {
+            select: {
+              id: true,
+              seatNumber: true,
+              status: true
+            }
+          },
+          images: {
+            select: {
+              id: true,
+              imageUrl: true,
+              altText: true
+            }
+          }
+        }
+      })
     })
 
     return ApiResponseBuilder.success(

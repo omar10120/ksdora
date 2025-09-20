@@ -22,6 +22,7 @@ interface PageProps {
   }
 }
 
+
 export default function EditTripPage({ params }: PageProps) {
   const router = useRouter()
   const { language, translations } = useLanguage()

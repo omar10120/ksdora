@@ -204,7 +204,7 @@ async function main() {
         descriptionEn: 'Comfortable trip from Damascus to Aleppo',
         longitude: 36.2765,
         latitude: 33.5138,
-        imageUrls: 'https://example.com/damascus-aleppo.jpg'
+        primaryImage: 'https://example.com/damascus-aleppo-primary.jpg'
       }
     }),
     prisma.trip.create({
@@ -222,7 +222,7 @@ async function main() {
         descriptionEn: 'Quick trip from Damascus to Homs',
         longitude: 36.7139,
         latitude: 34.7333,
-        imageUrls: 'https://example.com/damascus-homs.jpg'
+        primaryImage: 'https://example.com/damascus-homs-primary.jpg'
       }
     }),
     prisma.trip.create({
@@ -240,10 +240,38 @@ async function main() {
         descriptionEn: 'International trip from Damascus to Beirut',
         longitude: 35.5018,
         latitude: 33.8938,
-        imageUrls: 'https://example.com/damascus-beirut.jpg'
+        primaryImage: 'https://example.com/damascus-beirut-primary.jpg'
       }
     })
   ])
+
+  // Seed Trip Images
+  console.log('🖼️ Seeding trip images...')
+  const images = [
+    {
+      tripId: trips[0].id, // Damascus to Aleppo
+      imageUrl: 'https://example.com/damascus-aleppo.jpg',
+      altText: 'Damascus to Aleppo trip image'
+    },
+    {
+      tripId: trips[1].id, // Damascus to Homs
+      imageUrl: 'https://example.com/damascus-homs.jpg',
+      altText: 'Damascus to Homs trip image'
+    },
+    {
+      tripId: trips[2].id, // Damascus to Beirut
+      imageUrl: 'https://example.com/damascus-beirut.jpg',
+      altText: 'Damascus to Beirut trip image'
+    }
+  ]
+
+  await Promise.all(
+    images.map(imageData =>
+      prisma.images.create({
+        data: imageData
+      })
+    )
+  )
 
   // Seed Seats for each trip
   console.log('💺 Seeding seats...')

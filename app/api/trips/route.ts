@@ -1,12 +1,11 @@
 import { NextRequest ,NextResponse} from 'next/server'
 import prisma from '@/lib/prisma'
 import { ApiResponseBuilder, SuccessMessages, ErrorMessages ,StatusCodes} from '@/lib/apiResponse'
-import { validateRequest, createValidationResponse } from '@/lib/validation'
 import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
 // Simple in-memory cache for trips data
 const cache = new Map<string, { data: any, timestamp: number }>()
-const CACHE_TTL = 30000 // 30 seconds cache
+const CACHE_TTL = 0 // 0 seconds cache
 
 // GET - Fetch all trips with pagination and filters
 export const GET = asyncHandler(async (request: NextRequest) => {
@@ -80,13 +79,14 @@ export const GET = asyncHandler(async (request: NextRequest) => {
               status: true
             }
           },
-          // bookings: {
-          //   select: {
-          //     id: true,
-          //     status: true,
-          //     totalPrice: true
-          //   }
-          // }
+          images: {
+            select: {
+              id: true,
+              imageUrl: true,
+              altText: true
+            }
+          },
+
         },
         skip,
         take: limit

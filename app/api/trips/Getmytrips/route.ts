@@ -8,7 +8,7 @@ import { asyncHandler, ApiError } from '@/lib/errorHandler'
 
 // Simple in-memory cache for user trips data
 const cache = new Map<string, { data: any, timestamp: number }>()
-const CACHE_TTL = 30000 // 30 seconds cache
+const CACHE_TTL = 0 // 0 seconds cache
 
 // Force dynamic rendering for this API route
 export const dynamic = 'force-dynamic';
@@ -79,6 +79,13 @@ export const GET = asyncHandler(async (req: NextRequest) => {
                   model: true,
                   capacity: true,
                   status: true
+                }
+              },
+              images: {
+                select: {
+                  id: true,
+                  imageUrl: true,
+                  altText: true
                 }
               }
             }
@@ -156,7 +163,7 @@ export const GET = asyncHandler(async (req: NextRequest) => {
         descriptionEn: booking.trip.descriptionEn,
         latitude: booking.trip.latitude.toString(),
         longitude: booking.trip.longitude.toString(),
-        imageUrls: booking.trip.imageUrls,
+        images: booking.trip.images,
         createdAt: booking.trip.createdAt,
         updatedAt: booking.trip.updatedAt,
         route: {
