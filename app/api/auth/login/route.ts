@@ -12,7 +12,7 @@ export const POST = asyncHandler(async (req: Request) => {
 
     // Validate required fields
     if (!email || !password) {
-      return ApiResponseBuilder.error('Email and password are required', StatusCodes.BAD_REQUEST)
+      return ApiResponseBuilder.error(ErrorMessages.MISSING_REQUIRED_FIELDS, StatusCodes.BAD_REQUEST)
     }
 
     const user = await prisma.user.findUnique({
@@ -20,19 +20,19 @@ export const POST = asyncHandler(async (req: Request) => {
     })
 
     if (!user) {
-      return ApiResponseBuilder.error('Invalid credentials', StatusCodes.UNAUTHORIZED)
+      return ApiResponseBuilder.error(ErrorMessages.RESOURCE_NOT_FOUND, StatusCodes.UNAUTHORIZED)
     }
 
     // Check if email is verified
     if (!user.emailVerified) {
-        return ApiResponseBuilder.error('Please verify your email before logging in', StatusCodes.FORBIDDEN)
+        return ApiResponseBuilder.error(ErrorMessages.EMAIL_NOT_VERIFIED, StatusCodes.FORBIDDEN)
         
     }
 
     const isValidPassword = await bcrypt.compare(password, user.password)
 
     if (!isValidPassword) {
-      return ApiResponseBuilder.error('Invalid credentials', StatusCodes.UNAUTHORIZED)
+      return ApiResponseBuilder.error(ErrorMessages.INVALID_CREDENTIALS, StatusCodes.UNAUTHORIZED)
     }
 
     // Clear any existing refresh tokens for this user
@@ -62,7 +62,7 @@ export const POST = asyncHandler(async (req: Request) => {
     })
 
     return ApiResponseBuilder.success({
-      message: 'Login successful',
+      message: SuccessMessages.LOGIN_SUCCESS,
       token,
       refreshToken,
       user: {
@@ -75,6 +75,6 @@ export const POST = asyncHandler(async (req: Request) => {
     })
   } catch (error) {
     console.error('Login error:', error)
-    return ApiResponseBuilder.error('Internal server error', StatusCodes.INTERNAL_SERVER_ERROR)
+    return ApiResponseBuilder.error(ErrorMessages.INTERNAL_ERROR, StatusCodes.INTERNAL_SERVER_ERROR)
   }
 })

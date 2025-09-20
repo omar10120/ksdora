@@ -247,7 +247,8 @@ export const ErrorMessages = {
   UNSUPPORTED_FILE_TYPE: 'Unsupported file type',
   NETWORK_ERROR: 'Network error',
   TIMEOUT: 'Request timeout',
-  SERVICE_UNAVAILABLE: 'Service unavailable'
+  SERVICE_UNAVAILABLE: 'Service unavailable',
+  EMAIL_NOT_VERIFIED: 'Email not verified'
 } as const
 
 // Success messages
