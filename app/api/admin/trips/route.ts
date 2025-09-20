@@ -135,7 +135,7 @@ export const GET = asyncHandler(async (request: NextRequest) => {
 
     return ApiResponseBuilder.paginated(formattedTrips, pagination, SuccessMessages.RETRIEVED)
   } catch (error) {
-    throw ApiError.database('Failed to fetch trips')
+    throw ApiError.internal(`Failed to fetch trips , ${error}`)
   }
 })
 
