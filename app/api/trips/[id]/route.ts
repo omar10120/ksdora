@@ -19,7 +19,8 @@ export async function GET(
         },
         
         seats: true,
-        bus: true
+        bus: true,
+        images: true
       }
     })
   
@@ -33,7 +34,7 @@ export async function GET(
      // Parse imageUrls if it's stored as a JSON string
      const parsedTrip = {
       ...trip,
-      imageUrls: typeof trip.imageUrls === 'string' ? JSON.parse(trip.imageUrls) : trip.imageUrls
+      images: trip.images
     }
 
     return NextResponse.json(parsedTrip)
@@ -81,7 +82,8 @@ export async function PUT(
             arrivalCity: true
           }
         },
-        bus: true
+        bus: true,
+        images: true
       }
     })
 
@@ -103,7 +105,7 @@ export async function DELETE(
     // Check if trip has any bookings
     const tripWithBookings = await prisma.trip.findUnique({
       where: { id: params.id },
-      include: { bookings: true }
+      include: { bookings: true, images: true }
     })
 
     if (tripWithBookings?.bookings.length) {
